@@ -1,0 +1,104 @@
+.login-page{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  /* slightly lighter, mostly transparent backdrop */
+  background: linear-gradient(180deg, rgba(10,18,30,0.55), rgba(6,14,24,0.6));
+  color: #05232b;
+  padding:32px;
+  box-sizing:border-box;
+}
+
+.background-grid{
+  position:absolute;inset:0;
+  background-image: linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px;
+  transform: rotate(12deg);
+  opacity:0.5;
+  pointer-events:none;
+}
+
+.glass-card{
+  width:420px;
+  max-width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  align-items:center;
+  padding:28px 22px;
+  border-radius:18px;
+  /* lighter glass with strong transparency */
+  background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+  box-shadow: 0 18px 60px rgba(8,12,20,0.35), inset 0 1px 0 rgba(255,255,255,0.04);
+  backdrop-filter: blur(18px) saturate(140%);
+  border:1px solid rgba(255,255,255,0.14);
+  transition: transform .35s cubic-bezier(.15,.8,.25,1), box-shadow .35s;
+}
+.glass-card:hover{ transform: translateY(-6px) scale(1.01); box-shadow: 0 34px 100px rgba(7,14,40,0.45); }
+
+.card-top{ display:flex; width:100%; justify-content:center; }
+.sponge-wrap{ width:160px; display:flex; align-items:center; justify-content:center; }
+.sponge{ width:140px; height:140px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.18)); transition: transform .3s; }
+.glass-card:hover .sponge{ transform: translateY(-6px) scale(1.02); }
+
+/* monkey specific styles */
+.monkey{ width:140px; height:140px; display:block }
+.monkey .eye-open{ transition: opacity .12s, transform .12s }
+.monkey .eye-closed{ transition: opacity .12s }
+.monkey .pupil{ transition: transform .12s }
+
+/* mouth transitions */
+.mouth-smile{ opacity:0; transition: opacity .16s ease }
+.monkey.smile .mouth-smile{ opacity:1 }
+.monkey.smile .mouth-neutral{ opacity:0 }
+
+/* hand cover */
+.hands .hand{ transform: translateY(18px); transition: transform .18s ease }
+.monkey.cover .hands .hand{ transform: translateY(-28px) }
+.monkey.blink.cover .hands .hand{ transform: translateY(-24px) }
+
+/* peek: right hand uses mask so right eye shows through */
+.hands .hand.right{ transform-origin:center }
+
+.login-form{ width:100%; display:flex; flex-direction:column; gap:14px; padding:6px 2px; }
+.field{ display:flex; flex-direction:column; gap:8px; color:#dff3ff; width:100%; }
+.field span{ font-size:13px; opacity:0.9 }
+.field input{ padding:12px 14px; border-radius:10px; border:1px solid rgba(5,35,45,0.08); background: rgba(255,255,255,0.85); color:#042731; outline:none; transition: box-shadow .18s, transform .12s; width:100%; box-sizing:border-box }
+.field input::placeholder{ color:rgba(230,245,255,0.35) }
+.field input:focus{ box-shadow: 0 6px 30px rgba(23,120,255,0.12); transform: translateY(-2px); border-color: rgba(100,180,255,0.22) }
+
+.submit{ margin-top:6px; padding:12px 18px; border-radius:12px; border:0; cursor:pointer; font-weight:600; color:#042731; background: linear-gradient(90deg,#ffffff,#e6f7ff); transition: transform .12s, box-shadow .12s }
+.submit:hover{ transform: translateY(-3px); box-shadow: 0 12px 30px rgba(20,80,90,0.08) }
+
+.attribution{ position:fixed; bottom:18px; left:50%; transform:translateX(-50%); font-size:12px; color:rgba(230,245,255,0.35); }
+
+/* eye states */
+.sponge .eye-open{ opacity:1; transform-origin:center; transition: all .18s ease }
+.sponge .eye-closed{ opacity:0; transition: all .12s ease }
+.sponge .pupil{ transition: transform .14s ease }
+
+.sponge.closed .eye-open{ opacity:0 }
+.sponge.closed .eye-closed{ opacity:1 }
+.sponge.closed .pupil{ transform: translateY(6px) scale(0.9) }
+
+.sponge.open .eye-open{ transform: translateY(-4px) scale(1.03) }
+.sponge.open .pupil{ transform: translateY(0) }
+
+.sponge.neutral .eye-open{ transform: translateY(0) }
+
+/* blink animation: briefly show closed eyes */
+.sponge.blink .eye-open{ opacity:0 }
+.sponge.blink .eye-closed{ opacity:1 }
+
+/* hand transitions: hidden below head by default, slide up when closed */
+.hand{ transform: translateY(34px); transition: transform .18s ease; }
+.sponge.closed .hand{ transform: translateY(0); }
+.sponge.blink .hand{ transform: translateY(8px); }
+
+@media (max-width:720px){
+  .glass-card{ flex-direction:column; align-items:center }
+  .sponge-wrap{ margin-bottom:6px }
+}
