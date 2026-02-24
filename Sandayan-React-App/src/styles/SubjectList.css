@@ -1,0 +1,436 @@
+/* Subject List Styles */
+.subject-list-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subject-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.subject-list-header h1 {
+  font-size: 2rem;
+  color: #1a1a1a;
+  margin: 0;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0.5rem 0 0 0;
+  font-size: 1rem;
+}
+
+.back-btn {
+  padding: 0.75rem 1.5rem;
+  background: #f0f0f0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  background: #e0e0e0;
+  transform: translateX(-5px);
+}
+
+/* Filter Section */
+.filter-section {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.filter-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.filter-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+  border-color: #8b5cf6;
+  color: #8b5cf6;
+}
+
+.filter-btn.active {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border-color: #8b5cf6;
+}
+
+.reset-btn {
+  padding: 0.5rem 1rem;
+  background: #fee;
+  border: 1px solid #fcc;
+  border-radius: 8px;
+  color: #c33;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.reset-btn:hover {
+  background: #fdd;
+  border-color: #c00;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggle-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+  border-color: #8b5cf6;
+}
+
+.toggle-btn.active {
+  background: #8b5cf6;
+  color: white;
+  border-color: #8b5cf6;
+}
+
+/* Results Info */
+.results-info {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Subjects Grid */
+.subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.subject-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+}
+
+.subject-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  border-color: #8b5cf6;
+}
+
+.subject-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa, #f0f1f3);
+  border-bottom: 1px solid #eee;
+}
+
+.subject-code {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #8b5cf6;
+}
+
+.semester-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.semester-badge.semester-first {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.semester-badge.semester-second {
+  background: #e9d5ff;
+  color: #581c87;
+}
+
+.semester-badge.semester-both {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.subject-card-body {
+  padding: 1.5rem;
+  flex: 1;
+}
+
+.subject-title {
+  font-size: 1.08rem;
+  color: #1a1a1a;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.subject-description {
+  color: #666;
+  margin: 0 0 1rem 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.subject-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.detail-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.detail-value {
+  color: #1a1a1a;
+  font-weight: 700;
+}
+
+.subject-card-footer {
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-top: 1px solid #eee;
+}
+
+.view-details-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.view-details-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+/* Subjects Table */
+.subjects-table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.subjects-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.subjects-table thead {
+  background: linear-gradient(135deg, #f8f9fa, #f0f1f3);
+  border-bottom: 2px solid #ddd;
+}
+
+.subjects-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 700;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.subjects-table tbody tr {
+  border-bottom: 1px solid #eee;
+  transition: all 0.3s ease;
+}
+
+.subjects-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.subjects-table td {
+  padding: 1rem;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.subjects-table .center {
+  text-align: center;
+}
+
+.subjects-table .description-col {
+  max-width: 250px;
+  word-wrap: break-word;
+}
+
+.semester-badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.view-btn {
+  padding: 0.5rem 1rem;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.view-btn:hover {
+  background: #7c3aed;
+  transform: scale(1.05);
+}
+
+/* No Results */
+.no-results {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .subject-list-container {
+    padding: 1rem;
+  }
+
+  .subject-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .subjects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-section {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .subject-list-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .subjects-grid {
+    gap: 1rem;
+  }
+
+  .subject-card-header,
+  .subject-card-body,
+  .subject-card-footer {
+    padding: 1rem;
+  }
+}
