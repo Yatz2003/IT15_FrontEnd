@@ -5,10 +5,11 @@ import ProgramList from './components/ProgramList';
 import ProgramDetails from './components/ProgramDetails';
 import SubjectList from './components/SubjectList';
 import SubjectDetails from './components/SubjectDetails';
+import Login from './components/login/login';
 import { programsData, subjectsData } from './services/mockData';
 
 function App(){
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState('login');
   const [selectedId, setSelectedId] = useState(null);
 
   const navigateTo = (page, id = null) => {
@@ -24,6 +25,10 @@ function App(){
   const handleSubjectClick = (subjectId) => {
     navigateTo('subject-detail', subjectId);
   };
+
+  if (currentPage === 'login') {
+    return <Login onLoginSuccess={() => navigateTo('dashboard')} />;
+  }
 
   return (
     <div className="App">
