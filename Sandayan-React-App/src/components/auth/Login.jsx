@@ -14,7 +14,7 @@ function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const fromPath = useMemo(() => location.state?.from?.pathname || '/dashboard', [location.state]);
+  const fromPath = useMemo(() => location.state?.from?.pathname || '/overview', [location.state]);
 
   const validate = () => {
     const nextErrors = {};

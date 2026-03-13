@@ -14,3 +14,19 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Environment Setup
+
+The weather widget requires an OpenWeather API key provided through Vite environment variables.
+
+1. Copy `.env.example` to `.env.local`.
+2. Set the variables:
+
+```env
+VITE_WEATHER_API_KEY=your_openweather_api_key
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+3. Restart the Vite dev server after changing env values.
+
+If `VITE_WEATHER_API_KEY` is missing or invalid, the app shows a descriptive error in the weather widget.

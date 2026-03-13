@@ -58,3 +58,41 @@ export async function withRetry(requestFn, maxRetries = 2, baseDelay = 500) {
 
   throw new Error('Request failed after retries');
 }
+
+export const authApi = {
+  async login(email, password) {
+    const response = await withRetry(() => api.post('/api/login', { email, password }), 1);
+    return response.data;
+  },
+
+  async getProfile() {
+    const response = await withRetry(() => api.get('/api/profile'), 1);
+    return response.data;
+  },
+
+  async logout() {
+    try {
+      await api.post('/api/logout');
+    } catch (error) {
+      // The UI should still clear local auth state even if this request fails.
+      console.error('Logout request failed:', error);
+    }
+  },
+};
+
+export const dashboardApi = {
+  async getEnrollmentTrends() {
+    const response = await withRetry(() => api.get('/api/students/enrollment-trends'));
+    return response.data;
+  },
+
+  async getCourseDistribution() {
+    const response = await withRetry(() => api.get('/api/courses/distribution'));
+    return response.data;
+  },
+
+  async getAttendanceData() {
+    const response = await withRetry(() => api.get('/api/attendance'));
+    return response.data;
+  },
+};

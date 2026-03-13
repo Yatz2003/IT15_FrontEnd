@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import loginAPI from '../services/loginAPI';
+import { authApi } from '../services/api';
 
 const TOKEN_STORAGE_KEY = 'authToken';
 
@@ -22,16 +22,28 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      if (isMounted) {
+        setIsLoading(true);
+      }
+
       try {
-        const profile = await loginAPI.getProfile();
+        const profile = await authApi.getProfile();
         if (isMounted) {
           setUser(profile?.user || profile);
         }
-      } catch {
+      } catch (error) {
         if (isMounted) {
-          localStorage.removeItem(TOKEN_STORAGE_KEY);
-          setToken(null);
-          setUser(null);
+          const status = error?.response?.status;
+
+          if (status === 401 || status === 403) {
+            console.warn('[Auth] Session invalid (401/403). Clearing token.');
+            localStorage.removeItem(TOKEN_STORAGE_KEY);
+            setToken(null);
+            setUser(null);
+          } else {
+            // Keep the token for transient/network/backend-profile-endpoint issues.
+            console.warn('[Auth] Profile check failed without auth error. Keeping token.', error);
+          }
         }
       } finally {
         if (isMounted) {
@@ -48,8 +60,8 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (email, password) => {
-    const data = await loginAPI.login(email, password);
-    const authToken = data?.token || data?.access_token;
+    const data = await authApi.login(email, password);
+    const authToken = data?.token || data?.access_token || data?.data?.token || data?.data?.access_token;
 
     if (!authToken) {
       throw new Error('Authentication token was not returned by the server.');
@@ -62,7 +74,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    await loginAPI.logout();
+    await authApi.logout();
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     setToken(null);
     setUser(null);

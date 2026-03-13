@@ -4,7 +4,6 @@ import ForecastDisplay from './ForecastDisplay';
 import LoadingSpinner from '../common/LoadingSpinner';
 
 function WeatherWidget() {
-  const [city, setCity] = useState('Manila');
   const [query, setQuery] = useState('Manila');
   const [current, setCurrent] = useState(null);
   const [forecast, setForecast] = useState([]);
@@ -24,7 +23,6 @@ function WeatherWidget() {
 
       setCurrent(currentWeather);
       setForecast(forecastData);
-      setCity(cityName);
     } catch (err) {
       setError(err.message || 'Unable to load weather details.');
     } finally {
@@ -52,8 +50,7 @@ function WeatherWidget() {
 
           setCurrent(currentWeather);
           setForecast(forecastData);
-          setCity(currentWeather.name || city);
-          setQuery(currentWeather.name || city);
+          setQuery(currentWeather.name || 'Manila');
         } catch (err) {
           setError(err.message || 'Unable to fetch weather for your location.');
         } finally {

@@ -1,44 +1,66 @@
+import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
+const navItems = [
+  { to: '/overview', label: 'Overview' },
+  { to: '/students', label: 'Students' },
+  { to: '/programs', label: 'Programs' },
+  { to: '/subjects', label: 'Subjects' },
+  { to: '/enrollment', label: 'Enrollment' },
+  { to: '/reports', label: 'Reports' },
+  { to: '/settings', label: 'Settings' },
+];
+
 function Navbar() {
   const { user, logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const closeMobileNav = () => {
+    setIsOpen(false);
+  };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark app-navbar px-3 px-lg-4">
-      <div className="container-fluid p-0">
-        <Link className="navbar-brand fw-bold d-flex align-items-center gap-2" to="/dashboard">
-          <span className="brand-dot" aria-hidden="true" />
-          Sandayan Dashboard
-        </Link>
+    <>
+      <button
+        type="button"
+        className="mobile-nav-toggle"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-label="Toggle navigation"
+        aria-expanded={isOpen}
+      >
+        Menu
+      </button>
 
-        <button
-          className="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#dashboardNav"
-          aria-controls="dashboardNav"
-          aria-expanded="false"
-          aria-label="Toggle navigation"
-        >
-          <span className="navbar-toggler-icon" />
-        </button>
+      {isOpen && <button type="button" className="mobile-nav-backdrop" onClick={closeMobileNav} aria-label="Close navigation" />}
 
-        <div className="collapse navbar-collapse" id="dashboardNav">
-          <div className="navbar-nav ms-auto align-items-lg-center gap-lg-3">
-            <NavLink className="nav-link" to="/dashboard">
-              Dashboard
-            </NavLink>
-            <span className="nav-link text-light-subtle small">
-              {user?.name || user?.email || 'Authenticated User'}
-            </span>
-            <button type="button" className="btn btn-outline-light btn-sm" onClick={logout}>
-              Logout
-            </button>
-          </div>
+      <nav className={`app-sidebar ${isOpen ? 'is-open' : ''}`} aria-label="Primary">
+        <div className="sidebar-top">
+          <Link className="sidebar-brand fw-bold d-flex align-items-center gap-2" to="/overview" onClick={closeMobileNav}>
+            <span className="brand-dot" aria-hidden="true" />
+            Sandayan Dashboard
+          </Link>
+          <p className="sidebar-user mb-0">{user?.name || user?.email || 'Authenticated User'}</p>
         </div>
-      </div>
-    </nav>
+
+        <div className="app-nav-links" role="list">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={closeMobileNav}
+              className={({ isActive }) => `app-nav-link ${isActive ? 'active' : ''}`}
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+
+        <button type="button" className="btn btn-outline-light btn-sm mt-auto" onClick={logout}>
+          Logout
+        </button>
+      </nav>
+    </>
   );
 }
 

@@ -10,7 +10,10 @@ const weatherClient = axios.create({
 
 const getApiKey = () => {
   const key = import.meta.env.VITE_WEATHER_API_KEY;
-  if (!key) {
+  const isMissing = !key || !String(key).trim();
+  const isPlaceholder = key === 'REPLACE_WITH_YOUR_OPENWEATHER_KEY';
+
+  if (isMissing || isPlaceholder) {
     throw new Error('Weather API key is missing. Set VITE_WEATHER_API_KEY in your environment.');
   }
   return key;
@@ -42,6 +45,10 @@ const normalizeForecast = (list = []) => {
 };
 
 const mapWeatherError = (error) => {
+  if (error.response?.status === 401) {
+    return new Error('Invalid Weather API key. Update VITE_WEATHER_API_KEY in .env.local, then restart the Vite dev server.');
+  }
+
   if (error.response?.status === 429) {
     return new Error('Weather API rate limit reached. Please try again in a minute.');
   }

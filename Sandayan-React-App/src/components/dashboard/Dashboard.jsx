@@ -3,7 +3,7 @@ import EnrollmentChart from './EnrollmentChart';
 import CourseDistributionChart from './CourseDistributionChart';
 import AttendanceChart from './AttendanceChart';
 import LoadingSkeleton from '../common/LoadingSkeleton';
-import dashboardApi from '../../services/dashboardApi';
+import { dashboardApi } from '../../services/api';
 import WeatherWidget from '../weather/WeatherWidget';
 
 const extractError = (error, fallback) => error.response?.data?.message || error.message || fallback;
