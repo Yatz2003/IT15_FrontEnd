@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Login from './components/auth/Login';
 import Dashboard from './components/dashboard/Dashboard';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -10,14 +10,19 @@ import SubjectsPage from './pages/SubjectsPage';
 import EnrollmentPage from './pages/EnrollmentPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
-import './App.css';
+import ActiveProgramsPage from './pages/ActiveProgramsPage';
 
 function AppShell() {
+  const location = useLocation();
+
   return (
-    <div className="app-root">
+    <div className="relative min-h-screen">
+      <div className="grid-atmosphere" aria-hidden="true" />
       <Navbar />
-      <main className="app-main">
-        <Outlet />
+      <main className="min-h-screen px-3 pb-5 pt-16 lg:pl-[19rem] lg:pr-8 lg:pt-6">
+        <div key={location.pathname} className="page-stage">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
@@ -36,6 +41,7 @@ function App() {
             <Route path="/students" element={<StudentsPage />} />
             <Route path="/programs" element={<ProgramsPage />} />
             <Route path="/subjects" element={<SubjectsPage />} />
+            <Route path="/active-programs" element={<ActiveProgramsPage />} />
             <Route path="/enrollment" element={<EnrollmentPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/settings" element={<SettingsPage />} />

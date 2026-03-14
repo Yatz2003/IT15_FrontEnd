@@ -15,20 +15,25 @@ function EnrollmentChart({ data }) {
   }));
 
   return (
-    <div className="card border-0 shadow-sm h-100">
-      <div className="card-body">
-        <h2 className="h6 fw-semibold mb-3">Monthly Enrollment Trends</h2>
-        <div style={{ height: 280 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 12, right: 10, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="total" fill="#0d6efd" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+    <div className="glass-panel chart-rise h-full p-4 sm:p-5">
+      <h2 className="text-sm font-semibold text-cyan-100">Monthly Enrollment Trends</h2>
+      <p className="mt-1 text-xs text-slate-400">Enrollment records by month</p>
+      <div className="mt-3" style={{ height: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 12, right: 10, left: -10, bottom: 5 }}>
+            <CartesianGrid stroke="rgba(141, 196, 255, 0.18)" strokeDasharray="3 3" />
+            <XAxis dataKey="month" stroke="rgba(202, 227, 255, 0.8)" tick={{ fontSize: 12 }} />
+            <YAxis allowDecimals={false} stroke="rgba(202, 227, 255, 0.8)" tick={{ fontSize: 12 }} />
+            <Tooltip />
+            <Bar dataKey="total" fill="url(#enrollmentGlow)" radius={[6, 6, 0, 0]} animationDuration={900} />
+            <defs>
+              <linearGradient id="enrollmentGlow" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#72f9ff" />
+                <stop offset="100%" stopColor="#1f76ff" />
+              </linearGradient>
+            </defs>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

@@ -2,20 +2,49 @@ import axios from 'axios';
 import { withRetry } from './api';
 
 const WEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
+const PLACEHOLDER_KEY = 'REPLACE_WITH_YOUR_OPENWEATHER_KEY';
+export const WEATHER_KEY_MISSING_MESSAGE = 'Weather data is unavailable because VITE_WEATHER_API_KEY is not configured. Add it to Sandayan-React-App/.env, then restart the Vite server.';
 
 const weatherClient = axios.create({
   baseURL: WEATHER_BASE_URL,
   timeout: 15000,
 });
 
-const getApiKey = () => {
-  const key = import.meta.env.VITE_WEATHER_API_KEY;
-  const isMissing = !key || !String(key).trim();
-  const isPlaceholder = key === 'REPLACE_WITH_YOUR_OPENWEATHER_KEY';
+const readWeatherApiKey = () => {
+  const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
+  return String(apiKey || '').trim();
+};
 
-  if (isMissing || isPlaceholder) {
-    throw new Error('Weather API key is missing. Set VITE_WEATHER_API_KEY in your environment.');
+const maskApiKey = (key) => {
+  if (!key) {
+    return 'missing';
   }
+
+  if (key.length <= 8) {
+    return `${key.slice(0, 2)}***`;
+  }
+
+  return `${key.slice(0, 4)}...${key.slice(-4)}`;
+};
+
+const logApiKeyStatus = (context) => {
+  const key = readWeatherApiKey();
+  console.info(`[WeatherAPI] ${context} | key loaded: ${Boolean(key)} | key preview: ${maskApiKey(key)}`);
+};
+
+export const hasWeatherApiKey = () => {
+  const key = readWeatherApiKey();
+  return Boolean(key) && key !== PLACEHOLDER_KEY;
+};
+
+const getApiKey = () => {
+  if (!hasWeatherApiKey()) {
+    logApiKeyStatus('Missing API key check failed');
+    throw new Error(WEATHER_KEY_MISSING_MESSAGE);
+  }
+
+  const key = readWeatherApiKey();
+  logApiKeyStatus('API key resolved');
   return key;
 };
 
@@ -45,8 +74,12 @@ const normalizeForecast = (list = []) => {
 };
 
 const mapWeatherError = (error) => {
+  if (error.message === WEATHER_KEY_MISSING_MESSAGE) {
+    return error;
+  }
+
   if (error.response?.status === 401) {
-    return new Error('Invalid Weather API key. Update VITE_WEATHER_API_KEY in .env.local, then restart the Vite dev server.');
+    return new Error('Invalid Weather API key. Update VITE_WEATHER_API_KEY in .env, then restart the Vite dev server.');
   }
 
   if (error.response?.status === 429) {
@@ -60,8 +93,19 @@ const mapWeatherError = (error) => {
   return new Error(error.response?.data?.message || error.message || 'Weather request failed.');
 };
 
+const ensureApiKey = (methodName) => {
+  if (!hasWeatherApiKey()) {
+    logApiKeyStatus(`${methodName} blocked`);
+    throw new Error(WEATHER_KEY_MISSING_MESSAGE);
+  }
+};
+
+logApiKeyStatus('Weather service initialized');
+
 export const weatherApi = {
   async getCurrentByCity(city) {
+    ensureApiKey('getCurrentByCity');
+
     try {
       const response = await withRetry(
         () => weatherClient.get('/weather', { params: buildParams({ q: city }) }),
@@ -74,6 +118,8 @@ export const weatherApi = {
   },
 
   async getForecastByCity(city) {
+    ensureApiKey('getForecastByCity');
+
     try {
       const response = await withRetry(
         () => weatherClient.get('/forecast', { params: buildParams({ q: city }) }),
@@ -86,6 +132,8 @@ export const weatherApi = {
   },
 
   async getCurrentByCoords(lat, lon) {
+    ensureApiKey('getCurrentByCoords');
+
     try {
       const response = await withRetry(
         () => weatherClient.get('/weather', { params: buildParams({ lat, lon }) }),
@@ -98,6 +146,8 @@ export const weatherApi = {
   },
 
   async getForecastByCoords(lat, lon) {
+    ensureApiKey('getForecastByCoords');
+
     try {
       const response = await withRetry(
         () => weatherClient.get('/forecast', { params: buildParams({ lat, lon }) }),

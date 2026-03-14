@@ -15,20 +15,19 @@ function AttendanceChart({ data }) {
   }));
 
   return (
-    <div className="card border-0 shadow-sm h-100">
-      <div className="card-body">
-        <h2 className="h6 fw-semibold mb-3">Attendance Patterns by School Day</h2>
-        <div style={{ height: 280 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 12, right: 10, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="day" />
-              <YAxis domain={[0, 100]} />
-              <Tooltip />
-              <Line type="monotone" dataKey="attendance" stroke="#198754" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+    <div className="glass-panel chart-rise h-full p-4 sm:p-5">
+      <h2 className="text-sm font-semibold text-cyan-100">Attendance Patterns</h2>
+      <p className="mt-1 text-xs text-slate-400">Attendance rate across school days</p>
+      <div className="mt-3" style={{ height: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 12, right: 10, left: -10, bottom: 5 }}>
+            <CartesianGrid stroke="rgba(141, 196, 255, 0.18)" strokeDasharray="3 3" />
+            <XAxis dataKey="day" stroke="rgba(202, 227, 255, 0.8)" tick={{ fontSize: 12 }} />
+            <YAxis domain={[0, 100]} stroke="rgba(202, 227, 255, 0.8)" tick={{ fontSize: 12 }} />
+            <Tooltip />
+            <Line type="monotone" dataKey="attendance" stroke="#37f6d4" strokeWidth={3} dot={{ r: 3 }} animationDuration={900} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

@@ -1,9 +1,9 @@
 function LoadingSpinner({ fullScreen = false, message = 'Loading...' }) {
   return (
-    <div className={fullScreen ? 'fullscreen-loader' : 'd-flex justify-content-center py-4'}>
-      <div className="text-center">
-        <div className="spinner-border text-primary" role="status" aria-hidden="true" />
-        <p className="mt-2 mb-0 text-muted">{message}</p>
+    <div className={fullScreen ? 'flex min-h-screen items-center justify-center' : 'flex justify-center py-8'}>
+      <div className="glass-panel w-full max-w-xs p-5 text-center">
+        <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-cyan-100/20 border-t-cyan-300" role="status" aria-hidden="true" />
+        <p className="mt-3 text-sm text-slate-200">{message}</p>
       </div>
     </div>
   );

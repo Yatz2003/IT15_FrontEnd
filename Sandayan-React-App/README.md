@@ -19,11 +19,11 @@ If you are developing a production application, we recommend using TypeScript wi
 
 The weather widget requires an OpenWeather API key provided through Vite environment variables.
 
-1. Copy `.env.example` to `.env.local`.
+1. Copy `.env.example` to `.env` in the React project root.
 2. Set the variables:
 
 ```env
-VITE_WEATHER_API_KEY=your_openweather_api_key
+VITE_WEATHER_API_KEY=your_weather_api_key_here
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 

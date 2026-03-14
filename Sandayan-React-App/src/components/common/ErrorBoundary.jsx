@@ -22,11 +22,15 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="container py-5">
-          <div className="alert alert-danger" role="alert">
-            <h4 className="alert-heading">Something went wrong</h4>
-            <p className="mb-3">{this.state.errorMessage}</p>
-            <button type="button" className="btn btn-danger" onClick={this.handleReload}>
+        <div className="flex min-h-screen items-center justify-center px-4 py-8">
+          <div className="glass-panel w-full max-w-xl p-6" role="alert">
+            <h4 className="text-xl font-bold text-rose-100">Something went wrong</h4>
+            <p className="mt-2 text-sm text-slate-200">{this.state.errorMessage}</p>
+            <button
+              type="button"
+              className="mt-5 rounded-xl border border-rose-300/35 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/20"
+              onClick={this.handleReload}
+            >
               Reload App
             </button>
           </div>
