@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi } from '../services/api';
 
 const TOKEN_STORAGE_KEY = 'authToken';
+const AUTH_EXPIRED_EVENT = 'auth:expired';
 
 const AuthContext = createContext(null);
 
@@ -58,6 +59,34 @@ export function AuthProvider({ children }) {
       isMounted = false;
     };
   }, [token]);
+
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key !== TOKEN_STORAGE_KEY) {
+        return;
+      }
+
+      const nextToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+      setToken(nextToken);
+
+      if (!nextToken) {
+        setUser(null);
+      }
+    };
+
+    const handleAuthExpired = () => {
+      setToken(null);
+      setUser(null);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    };
+  }, []);
 
   const login = async (email, password) => {
     const data = await authApi.login(email, password);

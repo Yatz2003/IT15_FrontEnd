@@ -22,6 +22,19 @@ function WeatherWidget() {
   const [isGeoLoading, setIsGeoLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedKnownLocation, setSelectedKnownLocation] = useState('');
+  const [knownLocationOptions, setKnownLocationOptions] = useState(KNOWN_LOCATIONS);
+
+  const addKnownLocation = useCallback((cityName) => {
+    const normalized = String(cityName || '').trim();
+    if (!normalized) {
+      return;
+    }
+
+    setKnownLocationOptions((prev) => {
+      const next = [normalized, ...prev.filter((entry) => entry.toLowerCase() !== normalized.toLowerCase())];
+      return next.slice(0, 10);
+    });
+  }, []);
 
   const applyWeather = useCallback((payload) => {
     setCurrent(payload.current || null);
@@ -40,10 +53,12 @@ function WeatherWidget() {
     try {
       const weatherData = await weatherApi.getByCoords(lat, lon);
       applyWeather(weatherData);
+      return true;
     } catch (err) {
-      setError(err.message || 'Weather unavailable right now.');
+      setError(err.message || 'Live weather is temporarily unavailable. Showing fallback forecast.');
       setCurrent(null);
       setForecast([]);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -62,14 +77,15 @@ function WeatherWidget() {
       applyWeather(weatherData);
       const resolvedCity = weatherData.current?.name || city;
       setQuery(resolvedCity);
+      addKnownLocation(resolvedCity);
     } catch (err) {
-      setError(err.message || 'Weather unavailable right now.');
+      setError(err.message || 'Live weather is temporarily unavailable. Showing fallback forecast.');
       setCurrent(null);
       setForecast([]);
     } finally {
       setIsLoading(false);
     }
-  }, [applyWeather]);
+  }, [addKnownLocation, applyWeather]);
 
   const loadDefaultWeather = useCallback((options = {}) => {
     loadWeatherByCoords(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon, options);
@@ -89,22 +105,41 @@ function WeatherWidget() {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          await loadWeatherByCoords(latitude, longitude);
+          const loadedCurrentLocation = await loadWeatherByCoords(latitude, longitude);
+
+          if (!loadedCurrentLocation) {
+            setError('Unable to fetch weather for your location. Showing Manila weather instead.');
+            await loadDefaultWeather({ preserveError: true });
+            setQuery(DEFAULT_LOCATION.city);
+            setSelectedKnownLocation(DEFAULT_LOCATION.city);
+            return;
+          }
+
+          setSelectedKnownLocation('');
         } catch (err) {
           setError(err.message || 'Unable to fetch weather for your location. Showing Manila weather instead.');
-          loadDefaultWeather({ preserveError: true });
+          await loadDefaultWeather({ preserveError: true });
+          setQuery(DEFAULT_LOCATION.city);
+          setSelectedKnownLocation(DEFAULT_LOCATION.city);
         } finally {
           setIsGeoLoading(false);
         }
       },
-      (geoError) => {
+      async (geoError) => {
         if (geoError.code === 1) {
           setError('Location permission denied. Showing Manila weather instead.');
         } else {
           setError('Unable to access your location. Showing Manila weather instead.');
         }
-        loadDefaultWeather({ preserveError: true });
+        await loadDefaultWeather({ preserveError: true });
+        setQuery(DEFAULT_LOCATION.city);
+        setSelectedKnownLocation(DEFAULT_LOCATION.city);
         setIsGeoLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000,
       }
     );
   };
@@ -145,7 +180,7 @@ function WeatherWidget() {
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-cyan-100">Weather Nexus</h2>
-          <p className="mt-1 text-xs text-slate-400">Live conditions from campus backend</p>
+          <p className="mt-1 text-xs text-slate-400">7-day local weather outlook</p>
         </div>
           <button
             type="button"
@@ -153,7 +188,7 @@ function WeatherWidget() {
             onClick={loadGeoWeather}
             disabled={isGeoLoading || isLoading}
           >
-            {isGeoLoading ? 'Locating...' : 'Use My Location'}
+            {isGeoLoading ? 'Locating...' : 'Current Location'}
           </button>
       </div>
 
@@ -175,7 +210,7 @@ function WeatherWidget() {
             title="Select known location"
           >
             <option value="">Select</option>
-            {KNOWN_LOCATIONS.map((location) => (
+            {knownLocationOptions.map((location) => (
               <option key={location} value={location}>{location}</option>
             ))}
           </select>
@@ -255,7 +290,7 @@ function WeatherWidget() {
           )}
 
           {!current && !error && (
-            <div className="glass-panel-soft mt-3 p-4 text-xs text-slate-300">Weather unavailable.</div>
+            <div className="glass-panel-soft mt-3 p-4 text-xs text-slate-300">Forecast preview unavailable at the moment.</div>
           )}
         </>
       )}

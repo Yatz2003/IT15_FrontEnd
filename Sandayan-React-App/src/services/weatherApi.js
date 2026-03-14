@@ -11,6 +11,7 @@ const DEFAULT_LOCATION = {
 
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const HOURLY_TIMES = ['09:00', '12:00', '15:00', '18:00'];
+const PRESENTABLE_STATUSES = ['Sunny', 'Cloudy', 'Rainy', 'Partly cloudy', 'Windy', 'Cloudy', 'Sunny'];
 
 const normalizeTimestamp = (value, fallbackDate) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -65,7 +66,7 @@ const mapForecastEntry = (entry = {}, index = 0) => {
   return {
     dt,
     temp: baseTemp,
-    description: entry.weather?.[0]?.description || entry.description || 'Weather unavailable',
+    description: entry.weather?.[0]?.description || entry.description || 'Partly cloudy',
     icon: entry.weather?.[0]?.icon || entry.icon || '01d',
     day: normalizeDayLabel(entry, dt),
     hourly: hourlyFromEntry,
@@ -117,9 +118,11 @@ const mapWeatherError = (error) => {
 
 const normalizeWeatherResponse = (payload = {}) => {
   const source = payload?.data || payload;
+  const rawLocation = source.location || source.location_name || source.city || source.name || '';
+  const normalizedLocation = String(rawLocation).split(',')[0].trim() || DEFAULT_LOCATION.city;
 
   return {
-    name: source.name || 'Current Location',
+    name: normalizedLocation,
     main: {
       temp: Number(source.main?.temp ?? source.temperature ?? 0),
       humidity: Number(source.main?.humidity ?? source.humidity ?? 0),
@@ -129,7 +132,7 @@ const normalizeWeatherResponse = (payload = {}) => {
     },
     weather: [
       {
-        description: source.weather?.[0]?.description || source.description || 'Weather unavailable',
+        description: source.weather?.[0]?.description || source.description || 'Partly cloudy',
         icon: source.weather?.[0]?.icon || source.icon || '01d',
       },
     ],
@@ -198,7 +201,7 @@ const normalizeForecast = (payload = {}) => {
 
 const buildFallbackForecast = (current = {}) => {
   const baseTemp = Number(current.main?.temp ?? 0);
-  const baseDescription = current.weather?.[0]?.description || 'Weather unavailable';
+  const baseDescription = current.weather?.[0]?.description || 'Partly cloudy';
   const baseIcon = current.weather?.[0]?.icon || '01d';
 
   return Array.from({ length: FORECAST_DAYS }, (_, index) => {
@@ -209,7 +212,7 @@ const buildFallbackForecast = (current = {}) => {
     return {
       dt: Math.floor(date.getTime() / 1000),
       temp: baseTemp,
-      description: baseDescription,
+      description: PRESENTABLE_STATUSES[index] || baseDescription,
       icon: baseIcon,
       day: WEEK_DAYS[date.getDay()],
       hourly: HOURLY_TIMES.map((time, hourIndex) => ({

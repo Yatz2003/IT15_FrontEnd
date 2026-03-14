@@ -7,7 +7,30 @@ import { dashboardApi } from '../../services/api';
 import WeatherWidget from '../weather/WeatherWidget';
 import weatherApi from '../../services/weatherApi';
 
-const extractError = (error, fallback) => error.response?.data?.message || error.message || fallback;
+const extractError = (error, fallback) => {
+  const status = error?.response?.status;
+
+  if (status === 401) {
+    return 'Session expired. Please sign in again.';
+  }
+
+  return error.response?.data?.message || error.message || fallback;
+};
+
+const normalizeAttendanceValue = (entry = {}) => {
+  const raw = Number(entry.attendance ?? entry.rate ?? entry.value ?? 0);
+
+  if (!Number.isFinite(raw)) {
+    return 0;
+  }
+
+  // Some APIs return ratios (0.87) instead of percentages (87).
+  if (raw > 0 && raw <= 1) {
+    return raw * 100;
+  }
+
+  return raw;
+};
 
 const SAMPLE_METRICS = {
   totalPrograms: 12,
@@ -26,69 +49,18 @@ const metricCards = [
 ];
 
 const SAMPLE_ROOM_ASSIGNMENTS = [
-  { program: 'BS Information Technology', code: 'SUB101', subjectName: 'General Mathematics', room: 'Lab 201', availability: 'Available' },
-  { program: 'BS Information Technology', code: 'SUB102', subjectName: 'Physics 1', room: 'Lab 305', availability: 'Limited' },
-  { program: 'BS Computer Science', code: 'CS103', subjectName: 'Data Structures', room: 'Room 402', availability: 'Available' },
-  { program: 'BS Computer Science', code: 'CS220', subjectName: 'Algorithms', room: 'Room 404', availability: 'Limited' },
-  { program: 'BS Business Administration', code: 'BA115', subjectName: 'Business Analytics', room: 'Room 118', availability: 'Available' },
-  { program: 'BS Business Administration', code: 'BA206', subjectName: 'Financial Management', room: 'Room 209', availability: 'Available' },
+  { code: 'SUB101', subjectName: 'General Mathematics', room: 'Lab 201', schedule: 'MWF 8:00-9:30', capacity: '34/45' },
+  { code: 'SUB102', subjectName: 'Physics 1', room: 'Lab 305', schedule: 'TTH 10:00-11:30', capacity: '30/45' },
+  { code: 'CS103', subjectName: 'Data Structures', room: 'Room 402', schedule: 'MWF 1:00-2:30', capacity: '38/45' },
+  { code: 'CS220', subjectName: 'Algorithms', room: 'Room 404', schedule: 'TTH 1:00-2:30', capacity: '26/40' },
+  { code: 'IT202', subjectName: 'Programming Fundamentals', room: 'Lab 118', schedule: 'MWF 3:00-4:30', capacity: '41/45' },
+  { code: 'IT305', subjectName: 'Database Systems', room: 'Room 209', schedule: 'TTH 3:00-4:30', capacity: '29/40' },
 ];
-
-const resolveAvailability = (entry = {}) => {
-  const rawAvailability = entry.availability_status
-    ?? entry.availability
-    ?? entry.available_status
-    ?? entry.availabilityStatus
-    ?? entry.is_available
-    ?? entry.room_availability
-    ?? entry.roomAvailability
-    ?? entry.room?.availability
-    ?? entry.room_assignment?.availability
-    ?? entry.assignment?.availability;
-
-  if (typeof rawAvailability === 'string' && rawAvailability.trim()) {
-    const normalized = rawAvailability.trim().toLowerCase();
-
-    if (['available', 'open', 'vacant'].includes(normalized)) {
-      return 'Available';
-    }
-
-    if (['full', 'unavailable', 'closed', 'occupied', 'not available'].includes(normalized)) {
-      return 'Full';
-    }
-
-    if (['limited', 'few slots', 'almost full', 'partially available'].includes(normalized)) {
-      return 'Limited';
-    }
-
-    return rawAvailability.trim();
-  }
-
-  if (typeof rawAvailability === 'boolean') {
-    return rawAvailability ? 'Available' : 'Full';
-  }
-
-  if (typeof rawAvailability === 'number') {
-    return rawAvailability > 0 ? 'Available' : 'Full';
-  }
-
-  const seats = Number(entry.available_slots ?? entry.slots ?? entry.available ?? NaN);
-  if (Number.isFinite(seats)) {
-    if (seats > 20) {
-      return 'Available';
-    }
-    if (seats > 0) {
-      return 'Limited';
-    }
-    return 'Full';
-  }
-
-  return 'Unknown';
-};
 
 const SUBJECT_NAME_BY_CODE = {
   SUB101: 'General Mathematics',
   SUB102: 'Physics 1',
+  SUB201: 'Calculus 1',
   SUB103: 'Chemistry 1',
   SUB104: 'Communication Arts',
   IT101: 'Introduction to Computing',
@@ -97,11 +69,37 @@ const SUBJECT_NAME_BY_CODE = {
   CS220: 'Algorithms',
   BA115: 'Business Analytics',
   BA206: 'Financial Management',
+  IT305: 'Database Systems',
+};
+
+const SUBJECT_FALLBACKS = ['Physics 1', 'Calculus 1', 'Programming Fundamentals', 'Database Systems', 'General Mathematics', 'Communication Arts'];
+
+const parseCapacity = (entry = {}) => {
+  const present = Number(entry.students_present ?? entry.present ?? entry.current_students ?? entry.enrolled ?? NaN);
+  const max = Number(entry.max_capacity ?? entry.capacity ?? entry.room_capacity ?? entry.maximum ?? NaN);
+
+  if (Number.isFinite(present) && Number.isFinite(max) && max > 0) {
+    return `${present}/${max}`;
+  }
+
+  if (typeof entry.student_capacity === 'string' && entry.student_capacity.trim()) {
+    return entry.student_capacity.trim();
+  }
+
+  if (typeof entry.capacity_text === 'string' && entry.capacity_text.trim()) {
+    return entry.capacity_text.trim();
+  }
+
+  const fallbackCurrent = Number(entry.available_slots ?? entry.slots ?? NaN);
+  if (Number.isFinite(fallbackCurrent)) {
+    return `${Math.max(0, fallbackCurrent)}/45`;
+  }
+
+  return '30/45';
 };
 
 const buildRoomAssignments = (distribution = []) => {
   const rows = distribution.slice(0, 8).map((entry, index) => {
-    const program = String(entry.program || entry.course || entry.department || `Program ${index + 1}`);
     const code = String(entry.code || entry.course_code || entry.subject_code || `SUB${index + 101}`);
     const normalizedCode = code.toUpperCase();
     const subjectName = String(
@@ -109,17 +107,18 @@ const buildRoomAssignments = (distribution = []) => {
       || entry.subject
       || entry.title
       || SUBJECT_NAME_BY_CODE[normalizedCode]
-      || `Subject ${index + 1}`
+      || SUBJECT_FALLBACKS[index % SUBJECT_FALLBACKS.length]
     );
     const room = String(entry.room || entry.room_name || `Room ${210 + index}`);
-    const availability = resolveAvailability(entry);
+    const schedule = String(entry.schedule || entry.time_slot || entry.class_time || ['MWF 9:00-10:30', 'TTH 10:00-11:30', 'MWF 1:00-2:30'][index % 3]);
+    const capacity = parseCapacity(entry);
 
     return {
-      program,
       code,
       subjectName,
       room,
-      availability,
+      schedule,
+      capacity,
     };
   });
 
@@ -202,14 +201,47 @@ function Dashboard() {
 
     const loadMiniWeather = async () => {
       setMiniWeatherLoading(true);
-      try {
-        const payload = await weatherApi.getDefaultWeather();
-        if (mounted) {
-          setMiniWeather(payload.current || null);
+
+      const applyMiniWeather = (payload) => {
+        if (!mounted) {
+          return;
         }
+
+        setMiniWeather(payload?.current || null);
+      };
+
+      const loadFallbackWeather = async () => {
+        const payload = await weatherApi.getDefaultWeather();
+        applyMiniWeather(payload);
+      };
+
+      try {
+        if (!navigator.geolocation) {
+          await loadFallbackWeather();
+          return;
+        }
+
+        const coords = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => resolve(position.coords),
+            (error) => reject(error),
+            {
+              enableHighAccuracy: true,
+              timeout: 10000,
+              maximumAge: 300000,
+            }
+          );
+        });
+
+        const payload = await weatherApi.getByCoords(coords.latitude, coords.longitude);
+        applyMiniWeather(payload);
       } catch {
-        if (mounted) {
-          setMiniWeather(null);
+        try {
+          await loadFallbackWeather();
+        } catch {
+          if (mounted) {
+            setMiniWeather(null);
+          }
         }
       } finally {
         if (mounted) {
@@ -237,8 +269,8 @@ function Dashboard() {
     }).length;
     const studentsCount = distribution.reduce((acc, entry) => acc + Number(entry.students ?? entry.value ?? entry.total ?? 0), 0);
     const attendanceValues = attendance
-      .map((entry) => Number(entry.attendance ?? entry.rate ?? entry.value ?? 0))
-      .filter((value) => Number.isFinite(value));
+      .map((entry) => normalizeAttendanceValue(entry))
+      .filter((value) => Number.isFinite(value) && value > 0);
     const averageAttendance = attendanceValues.length
       ? Math.round(attendanceValues.reduce((sum, value) => sum + value, 0) / attendanceValues.length)
       : SAMPLE_METRICS.averageAttendance;
@@ -262,7 +294,7 @@ function Dashboard() {
           <div>
             <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">Overview</p>
             <h1 className="mt-2 text-3xl font-bold text-cyan-50">Academic Command Center</h1>
-            <p className="mt-2 text-sm text-slate-300">Live analytics from Laravel REST endpoints with resilient real-time visuals.</p>
+            <p className="mt-2 text-sm text-slate-300">Enrollment monitoring and academic performance overview for Sandayan Academy.</p>
           </div>
         </div>
 
@@ -273,6 +305,7 @@ function Dashboard() {
           ) : miniWeather ? (
             <div className="mt-1">
               <p className="truncate text-[11px] font-semibold text-cyan-100">{miniWeather.name}</p>
+              <p className="text-[10px] font-semibold text-cyan-100">{Math.round(miniWeather.main?.temp ?? 0)}°C</p>
               <p className="truncate text-[10px] capitalize text-slate-300">{miniWeather.weather?.[0]?.description || 'Clear sky'}</p>
             </div>
           ) : (
@@ -345,40 +378,22 @@ function Dashboard() {
           <table className="w-full min-w-[760px] text-left text-sm text-slate-200">
             <thead>
               <tr className="border-b border-cyan-200/20 text-xs uppercase tracking-[0.14em] text-slate-300">
-                <th className="py-2 pr-3">Program</th>
-                <th className="py-2 pr-3">Subject/Course Code</th>
-                <th className="py-2 pr-3">Subject/Course Name</th>
-                <th className="py-2 pr-3">Room Assignment</th>
-                <th className="py-2">Availability</th>
+                <th className="py-2 pr-3">Subject Name</th>
+                <th className="py-2 pr-3">Room</th>
+                <th className="py-2 pr-3">Schedule</th>
+                <th className="py-2">Student Capacity</th>
               </tr>
             </thead>
             <tbody>
               {roomAssignments.map((row) => (
                 <tr key={`${row.code}-${row.subjectName}`} className="border-b border-cyan-100/10">
-                  <td className="py-2 pr-3">{row.program}</td>
-                  <td className="py-2 pr-3 font-semibold text-cyan-100">{row.code}</td>
-                  <td className="py-2 pr-3">{row.subjectName}</td>
+                  <td className="py-2 pr-3 font-semibold text-cyan-100">{row.subjectName}</td>
                   <td className="py-2 pr-3">{row.room}</td>
+                  <td className="py-2 pr-3">{row.schedule}</td>
                   <td className="py-2">
-                    {(() => {
-                      const availabilityKey = String(row.availability || '').toLowerCase();
-                      const colorClass = availabilityKey === 'available'
-                        ? 'bg-emerald-400/20 text-emerald-100'
-                        : availabilityKey === 'full'
-                          ? 'bg-rose-400/20 text-rose-100'
-                          : availabilityKey === 'limited'
-                            ? 'bg-amber-300/20 text-amber-100'
-                            : 'bg-slate-400/20 text-slate-100';
-
-                      return (
-                    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                      colorClass
-                    }`}
-                    >
-                      {row.availability}
+                    <span className="inline-flex rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-semibold text-cyan-100">
+                      {row.capacity}
                     </span>
-                      );
-                    })()}
                   </td>
                 </tr>
               ))}

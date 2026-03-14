@@ -48,12 +48,14 @@ function Navbar() {
       >
         <div className="glass-panel mb-4 p-4">
           <Link className="flex items-center gap-3" to="/overview" onClick={closeMobileNav}>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400/20 text-sm font-bold text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.35)]">
-              SD
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-400/20 text-cyan-100 shadow-[0_0_20px_rgba(34,211,238,0.35)]">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                <path d="M12 3 2 8l10 5 8-4v5h2V8L12 3Zm-6 8.2V15c0 .8 2.7 3 6 3s6-2.2 6-3v-3.8l-6 3-6-3Z" />
+              </svg>
             </span>
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-cyan-100">Sandayan</p>
-              <p className="text-xs text-slate-300">Neural Dashboard</p>
+              <p className="text-sm font-bold uppercase tracking-[0.14em] text-cyan-100">Sandayan Academy</p>
+              <p className="text-xs text-slate-300">Enrollment System</p>
             </div>
           </Link>
           <p className="mt-3 truncate text-xs text-slate-300">{user?.name || user?.email || 'Authenticated User'}</p>

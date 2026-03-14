@@ -12,8 +12,8 @@ function CourseDistributionChart({ data }) {
 
   return (
     <div className="glass-panel chart-rise h-full p-4 sm:p-5">
-      <h2 className="text-sm font-semibold text-cyan-100">Program Distribution</h2>
-      <p className="mt-1 text-xs text-slate-300">Student distribution by degree program</p>
+      <h2 className="text-sm font-semibold text-cyan-100">Course Distribution</h2>
+      <p className="mt-1 text-xs text-slate-300">Distribution of students across offered courses</p>
       <div className="glass-panel-soft mt-3 h-[280px] rounded-xl p-3">
         <div className="flex h-full flex-col gap-3 sm:flex-row">
           <div className="h-[120px] sm:h-full sm:w-[44%]">
