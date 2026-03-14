@@ -1,7 +1,19 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const RAW_API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api';
+const API_BASE_URL = String(RAW_API_BASE_URL).replace(/\/+$/, '');
 const TOKEN_STORAGE_KEY = 'authToken';
+const API_PREFIX = API_BASE_URL.endsWith('/api') ? '' : '/api';
+
+export const apiPath = (path) => {
+  const normalized = String(path || '').replace(/^\/+/, '');
+
+  if (!API_PREFIX) {
+    return normalized;
+  }
+
+  return `${API_PREFIX}/${normalized}`;
+};
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -61,18 +73,18 @@ export async function withRetry(requestFn, maxRetries = 2, baseDelay = 500) {
 
 export const authApi = {
   async login(email, password) {
-    const response = await withRetry(() => api.post('/api/login', { email, password }), 1);
+    const response = await withRetry(() => api.post(apiPath('/login'), { email, password }), 1);
     return response.data;
   },
 
   async getProfile() {
-    const response = await withRetry(() => api.get('/api/profile'), 1);
+    const response = await withRetry(() => api.get(apiPath('/profile')), 1);
     return response.data;
   },
 
   async logout() {
     try {
-      await api.post('/api/logout');
+      await api.post(apiPath('/logout'));
     } catch (error) {
       // The UI should still clear local auth state even if this request fails.
       console.error('Logout request failed:', error);
@@ -81,18 +93,18 @@ export const authApi = {
 };
 
 export const dashboardApi = {
-  async getEnrollmentTrends() {
-    const response = await withRetry(() => api.get('/api/students/enrollment-trends'));
+  async getEnrollmentAnalytics() {
+    const response = await withRetry(() => api.get(apiPath('/dashboard/enrollment-analytics')));
     return response.data;
   },
 
-  async getCourseDistribution() {
-    const response = await withRetry(() => api.get('/api/courses/distribution'));
+  async getProgramDistribution() {
+    const response = await withRetry(() => api.get(apiPath('/dashboard/program-distribution')));
     return response.data;
   },
 
-  async getAttendanceData() {
-    const response = await withRetry(() => api.get('/api/attendance'));
+  async getAttendancePatterns() {
+    const response = await withRetry(() => api.get(apiPath('/dashboard/attendance-patterns')));
     return response.data;
   },
 };

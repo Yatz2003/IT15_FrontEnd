@@ -17,16 +17,15 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Environment Setup
 
-The weather widget requires an OpenWeather API key provided through Vite environment variables.
+The dashboard and weather widget use the Laravel REST API.
 
 1. Copy `.env.example` to `.env` in the React project root.
 2. Set the variables:
 
 ```env
-VITE_WEATHER_API_KEY=your_weather_api_key_here
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 3. Restart the Vite dev server after changing env values.
 
-If `VITE_WEATHER_API_KEY` is missing or invalid, the app shows a descriptive error in the weather widget.
+Weather data is fetched from the backend endpoint at `/api/weather`.

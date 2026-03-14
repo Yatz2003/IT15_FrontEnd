@@ -1,38 +1,130 @@
+import { useState } from 'react';
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 
+const YEAR_PATTERN = /(19|20)\d{2}/;
+const START_YEAR = 2015;
+
 function EnrollmentChart({ data }) {
-  const chartData = data.map((entry) => ({
-    month: entry.month || entry.label || 'N/A',
-    total: Number(entry.total ?? entry.count ?? entry.enrollment ?? 0),
-  }));
+  const [selectedYear, setSelectedYear] = useState('all');
+  const currentYear = new Date().getFullYear();
+
+  const totalsByYear = data.reduce((acc, entry) => {
+    const rawYear = entry.year || entry.academic_year || entry.label || entry.name || '';
+    const parsedYear = String(rawYear).match(YEAR_PATTERN)?.[0] || '';
+    const year = Number(parsedYear);
+
+    if (!Number.isFinite(year) || year < START_YEAR || year > currentYear) {
+      return acc;
+    }
+
+    const total = Number(entry.total ?? entry.count ?? entry.enrollment ?? entry.value ?? 0);
+    const safeTotal = Number.isFinite(total) ? total : 0;
+    acc[year] = (acc[year] || 0) + safeTotal;
+    return acc;
+  }, {});
+
+  const safeChartData = Array.from({ length: currentYear - START_YEAR + 1 }, (_, offset) => {
+    const year = START_YEAR + offset;
+    return {
+      year: String(year),
+      total: totalsByYear[year] || 0,
+    };
+  });
+
+  const growthChartData = safeChartData.map((entry, index) => {
+    if (index === 0) {
+      return { ...entry, growth: 0 };
+    }
+
+    const previous = safeChartData[index - 1].total;
+    const current = entry.total;
+
+    const growth = previous > 0
+      ? ((current - previous) / previous) * 100
+      : (current > 0 ? 100 : 0);
+
+    return {
+      ...entry,
+      growth: Math.round(growth * 100) / 100,
+    };
+  });
+
+  const yearOptions = safeChartData.map((entry) => String(entry.year));
+
+  const displayData = selectedYear === 'all'
+    ? growthChartData
+    : growthChartData.filter((entry) => String(entry.year) === selectedYear);
 
   return (
     <div className="glass-panel chart-rise h-full p-4 sm:p-5">
-      <h2 className="text-sm font-semibold text-cyan-100">Monthly Enrollment Trends</h2>
-      <p className="mt-1 text-xs text-slate-400">Enrollment records by month</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-cyan-100">Enrollment Analytics</h2>
+          <p className="mt-1 text-xs text-slate-300">Enrollment totals by calendar year</p>
+        </div>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs">📅</span>
+          <select
+            aria-label="Choose calendar year"
+            title="Choose calendar year"
+            className="rounded-md border border-cyan-200/30 bg-slate-900/55 pl-7 pr-2 py-1 text-xs text-slate-100 outline-none"
+            value={selectedYear}
+            onChange={(event) => setSelectedYear(event.target.value)}
+          >
+            <option value="all">All Years</option>
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+        </div>
+      </div>
       <div className="mt-3" style={{ height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 12, right: 10, left: -10, bottom: 5 }}>
-            <CartesianGrid stroke="rgba(141, 196, 255, 0.18)" strokeDasharray="3 3" />
-            <XAxis dataKey="month" stroke="rgba(202, 227, 255, 0.8)" tick={{ fontSize: 12 }} />
-            <YAxis allowDecimals={false} stroke="rgba(202, 227, 255, 0.8)" tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Bar dataKey="total" fill="url(#enrollmentGlow)" radius={[6, 6, 0, 0]} animationDuration={900} />
-            <defs>
-              <linearGradient id="enrollmentGlow" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#72f9ff" />
-                <stop offset="100%" stopColor="#1f76ff" />
-              </linearGradient>
-            </defs>
-          </BarChart>
+          <LineChart data={displayData} margin={{ top: 14, right: 16, left: 2, bottom: 10 }}>
+            <CartesianGrid stroke="rgba(125, 160, 202, 0.28)" strokeDasharray="3 3" />
+            <XAxis
+              dataKey="year"
+              stroke="rgba(220, 235, 255, 0.95)"
+              tick={{ fontSize: 11, fill: 'rgba(220, 235, 255, 0.95)' }}
+              tickMargin={10}
+              interval={0}
+            />
+            <YAxis
+              unit="%"
+              stroke="rgba(220, 235, 255, 0.95)"
+              tick={{ fontSize: 12, fill: 'rgba(220, 235, 255, 0.95)' }}
+              tickMargin={8}
+            />
+            <Tooltip
+              formatter={(value, name) => {
+                if (name === 'growth') {
+                  return [`${Number(value).toFixed(2)}%`, 'Growth'];
+                }
+                return [value, name];
+              }}
+              labelFormatter={(label, payload) => {
+                const total = payload?.[0]?.payload?.total ?? 0;
+                return `Year ${label} | Enrollment: ${total}`;
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="growth"
+              stroke="#2563eb"
+              strokeWidth={3}
+              dot={{ r: 3, fill: '#22d3ee' }}
+              activeDot={{ r: 5 }}
+              animationDuration={900}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </div>
     </div>
