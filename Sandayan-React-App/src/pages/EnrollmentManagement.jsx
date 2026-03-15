@@ -414,13 +414,20 @@ function EnrollmentManagement() {
 
             {editError && <p className="mt-3 text-xs text-rose-200">{editError}</p>}
 
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <div className="mt-5 flex flex-wrap justify-center gap-2 sm:justify-end">
               <button
                 type="button"
                 className="rounded-lg border border-slate-300/30 px-3 py-2 text-xs font-semibold text-slate-100 transition hover:bg-slate-600/20"
                 onClick={closeEditModal}
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-cyan-300/35 bg-cyan-500/15 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-500/25"
+                onClick={() => saveEnrollment()}
+              >
+                Save Changes
               </button>
               <button
                 type="button"
