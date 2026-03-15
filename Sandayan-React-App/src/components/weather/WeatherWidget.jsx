@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Bar,
-  BarChart,
+  CartesianGrid,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -174,6 +175,9 @@ function WeatherWidget() {
 
   const selectedForecast = forecast[selectedDayIndex] || null;
   const hourlyData = Array.isArray(selectedForecast?.hourly) ? selectedForecast.hourly : [];
+  const hourlyTemps = hourlyData.map((hour) => Number(hour.temp)).filter(Number.isFinite);
+  const yAxisMin = hourlyTemps.length ? Math.floor(Math.min(...hourlyTemps) - 1) : 0;
+  const yAxisMax = hourlyTemps.length ? Math.ceil(Math.max(...hourlyTemps) + 1) : 10;
 
   return (
     <section className="glass-panel h-full p-3.5 sm:p-4">
@@ -282,12 +286,25 @@ function WeatherWidget() {
 
                   <div className="chart-rise mt-2.5" style={{ height: 145 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={hourlyData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+                      <LineChart data={hourlyData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+                        <CartesianGrid stroke="rgba(148, 192, 255, 0.16)" strokeDasharray="3 3" />
                         <XAxis dataKey="time" stroke="rgba(202, 227, 255, 0.85)" tick={{ fontSize: 10 }} />
-                        <YAxis stroke="rgba(202, 227, 255, 0.85)" tick={{ fontSize: 10 }} />
-                        <Tooltip />
-                        <Bar dataKey="temp" fill="#1d4ed8" radius={[4, 4, 0, 0]} />
-                      </BarChart>
+                        <YAxis
+                          stroke="rgba(202, 227, 255, 0.85)"
+                          tick={{ fontSize: 10 }}
+                          domain={[yAxisMin, yAxisMax]}
+                          tickFormatter={(value) => `${value}°C`}
+                        />
+                        <Tooltip formatter={(value) => `${Number(value).toFixed(1)}°C`} labelFormatter={(label) => `Time: ${label}`} />
+                        <Line
+                          type="monotone"
+                          dataKey="temp"
+                          stroke="#22d3ee"
+                          strokeWidth={2}
+                          dot={{ r: 3, stroke: '#22d3ee', fill: '#0f172a' }}
+                          activeDot={{ r: 5 }}
+                        />
+                      </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </>

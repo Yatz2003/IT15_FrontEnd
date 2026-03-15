@@ -13,6 +13,56 @@ const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const HOURLY_TIMES = ['09:00', '12:00', '15:00', '18:00'];
 const PRESENTABLE_STATUSES = ['Sunny', 'Cloudy', 'Rainy', 'Partly cloudy', 'Windy', 'Cloudy', 'Sunny'];
 
+const ICON_DESCRIPTION_MAP = {
+  '01d': 'Sunny',
+  '01n': 'Clear night',
+  '02d': 'Partly cloudy',
+  '02n': 'Partly cloudy',
+  '03d': 'Cloudy',
+  '03n': 'Cloudy',
+  '04d': 'Overcast',
+  '04n': 'Overcast',
+  '09d': 'Showers',
+  '09n': 'Showers',
+  '10d': 'Rainy',
+  '10n': 'Rainy',
+  '11d': 'Thunderstorm',
+  '11n': 'Thunderstorm',
+  '13d': 'Snow',
+  '13n': 'Snow',
+  '50d': 'Misty',
+  '50n': 'Misty',
+};
+
+const MAIN_DESCRIPTION_MAP = {
+  Thunderstorm: 'Thunderstorm',
+  Drizzle: 'Light rain',
+  Rain: 'Rainy',
+  Snow: 'Snow',
+  Atmosphere: 'Misty',
+  Clear: 'Sunny',
+  Clouds: 'Cloudy',
+};
+
+const normalizeDescription = (description, icon, main) => {
+  const normalizedDescription = String(description || '').trim();
+  if (normalizedDescription && normalizedDescription.toLowerCase() !== 'partly cloudy') {
+    return normalizedDescription;
+  }
+
+  const iconLabel = ICON_DESCRIPTION_MAP[String(icon || '').trim()];
+  if (iconLabel) {
+    return iconLabel;
+  }
+
+  const mainLabel = MAIN_DESCRIPTION_MAP[String(main || '').trim()];
+  if (mainLabel) {
+    return mainLabel;
+  }
+
+  return normalizedDescription || 'Cloudy';
+};
+
 const normalizeTimestamp = (value, fallbackDate) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value > 1e12 ? Math.floor(value / 1000) : Math.floor(value);
@@ -66,7 +116,11 @@ const mapForecastEntry = (entry = {}, index = 0) => {
   return {
     dt,
     temp: baseTemp,
-    description: entry.weather?.[0]?.description || entry.description || 'Partly cloudy',
+    description: normalizeDescription(
+      entry.weather?.[0]?.description || entry.description,
+      entry.weather?.[0]?.icon || entry.icon,
+      entry.weather?.[0]?.main || entry.main
+    ),
     icon: entry.weather?.[0]?.icon || entry.icon || '01d',
     day: normalizeDayLabel(entry, dt),
     hourly: hourlyFromEntry,
@@ -132,7 +186,11 @@ const normalizeWeatherResponse = (payload = {}) => {
     },
     weather: [
       {
-        description: source.weather?.[0]?.description || source.description || 'Partly cloudy',
+        description: normalizeDescription(
+          source.weather?.[0]?.description || source.description,
+          source.weather?.[0]?.icon || source.icon,
+          source.weather?.[0]?.main || source.main_condition
+        ),
         icon: source.weather?.[0]?.icon || source.icon || '01d',
       },
     ],

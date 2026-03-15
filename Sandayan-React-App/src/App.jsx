@@ -8,10 +8,12 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import StudentsPage from './pages/StudentsPage';
 import ProgramsPage from './pages/ProgramsPage';
 import SubjectsPage from './pages/SubjectsPage';
-import EnrollmentPage from './pages/EnrollmentPage';
-import ReportsPage from './pages/ReportsPage';
+import EnrollmentManagement from './pages/EnrollmentManagement';
+import Reports from './pages/Reports';
 import SettingsPage from './pages/SettingsPage';
 import ActiveProgramsPage from './pages/ActiveProgramsPage';
+import CalendarPage from './pages/CalendarPage';
+import ArchivePage from './pages/ArchivePage';
 
 function AppShell() {
   const location = useLocation();
@@ -44,9 +46,11 @@ function App() {
             <Route path="/programs" element={<ProgramsPage />} />
             <Route path="/subjects" element={<SubjectsPage />} />
             <Route path="/active-programs" element={<ActiveProgramsPage />} />
-            <Route path="/enrollment" element={<EnrollmentPage />} />
-            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/enrollment" element={<EnrollmentManagement />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/archive" element={<ArchivePage />} />
             <Route path="/dashboard" element={<Navigate to="/overview" replace />} />
           </Route>
         </Route>

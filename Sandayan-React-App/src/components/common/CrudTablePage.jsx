@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import LoadingSkeleton from './LoadingSkeleton';
+import archiveService from '../../services/archiveService';
+import DeleteConfirmDashboard from './DeleteConfirmDashboard';
 
 const PAGE_SIZE = 6;
 
@@ -13,12 +15,36 @@ const toInitialForm = (columns, row = null) => {
   return next;
 };
 
-function CrudTablePage({ title, description, entityLabel, columns, initialRows }) {
-  const [rows, setRows] = useState(initialRows);
+const mergeRowsById = (primaryRows = [], secondaryRows = []) => {
+  const merged = [];
+  const seen = new Set();
+
+  [...primaryRows, ...secondaryRows].forEach((row) => {
+    const resolvedId = row?.id;
+
+    if (resolvedId === undefined || resolvedId === null || seen.has(resolvedId)) {
+      return;
+    }
+
+    seen.add(resolvedId);
+    merged.push(row);
+  });
+
+  return merged;
+};
+
+function CrudTablePage({ title, description, entityLabel, columns, initialRows, archiveType }) {
+  const resolvedArchiveType = archiveType || entityLabel;
+
+  const [rows, setRows] = useState(() => {
+    const restoredRows = archiveService.consumeRestoredItems(resolvedArchiveType);
+    return mergeRowsById(restoredRows, initialRows);
+  });
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [modalState, setModalState] = useState({ open: false, mode: 'create', rowId: null });
+  const [deleteModal, setDeleteModal] = useState({ open: false, row: null });
   const [form, setForm] = useState(() => toInitialForm(columns));
   const [formErrors, setFormErrors] = useState({});
   const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
@@ -98,6 +124,54 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
     setModalState({ open: false, mode: 'create', rowId: null });
   };
 
+  const openDeleteModal = (row) => {
+    setDeleteModal({ open: true, row });
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModal({ open: false, row: null });
+  };
+
+  const confirmDelete = () => {
+    if (!deleteModal.row) {
+      return;
+    }
+
+    const rowToDelete = deleteModal.row;
+    const resolvedLabel = String(
+      rowToDelete.name
+      || rowToDelete.student
+      || rowToDelete.code
+      || rowToDelete.studentNo
+      || rowToDelete[columns[0]?.key]
+      || 'Untitled record'
+    ).trim();
+
+    archiveService.addArchivedItem({
+      entityType: resolvedArchiveType,
+      label: resolvedLabel,
+      data: rowToDelete,
+    });
+
+    setRows((prev) => prev.filter((row) => row.id !== rowToDelete.id));
+    closeDeleteModal();
+  };
+
+  const deleteRecordLabel = useMemo(() => {
+    if (!deleteModal.row) {
+      return '';
+    }
+
+    return String(
+      deleteModal.row.name
+      || deleteModal.row.student
+      || deleteModal.row.code
+      || deleteModal.row.studentNo
+      || deleteModal.row[columns[0]?.key]
+      || 'Untitled record'
+    ).trim();
+  }, [deleteModal.row, columns]);
+
   const saveRecord = () => {
     setHasTriedSubmit(true);
 
@@ -170,13 +244,22 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
                           <td key={column.key} className="px-4 py-3">{row[column.key]}</td>
                         ))}
                         <td className="px-4 py-3">
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(row)}
-                            className="rounded-lg border border-cyan-200/30 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/15"
-                          >
-                            Edit
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal(row)}
+                              className="rounded-lg border border-cyan-200/30 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/15"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(row)}
+                              className="rounded-lg border border-rose-300/35 bg-rose-500/10 px-3 py-1.5 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/20"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -215,8 +298,8 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
       </div>
 
       {modalState.open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 px-4">
-          <div className="glass-panel w-full max-w-lg p-5">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/70 px-4 py-4">
+          <div className="glass-panel max-h-[90vh] w-full max-w-lg overflow-y-auto p-5">
             <h2 className="text-lg font-semibold text-cyan-100">
               {modalState.mode === 'create' ? `Add ${entityLabel}` : `Edit ${entityLabel}`}
             </h2>
@@ -225,17 +308,34 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
               {columns.map((column) => (
                 <label key={column.key} className="text-xs text-slate-300">
                   {column.label}
-                  <input
-                    className={`input-glow mt-1 w-full rounded-lg border bg-slate-900/35 px-3 py-2 text-sm text-white outline-none ${formErrors[column.key] ? 'border-rose-300/60' : 'border-cyan-200/25'}`}
-                    value={form[column.key] ?? ''}
-                    onChange={(event) => {
-                      const { value } = event.target;
-                      setForm((prev) => ({ ...prev, [column.key]: value }));
+                  {column.inputType === 'select' ? (
+                    <select
+                      className={`input-glow mt-1 w-full rounded-lg border bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none ${formErrors[column.key] ? 'border-rose-300/60' : 'border-cyan-200/25'}`}
+                      style={{ colorScheme: 'dark' }}
+                      value={form[column.key] ?? ''}
+                      onChange={(event) => {
+                        const { value } = event.target;
+                        setForm((prev) => ({ ...prev, [column.key]: value }));
 
-                      if (hasTriedSubmit) {
+                        if (hasTriedSubmit) {
+                          setFormErrors((prev) => {
+                            const next = { ...prev };
+                            const fieldError = validateField(column, value);
+
+                            if (fieldError) {
+                              next[column.key] = fieldError;
+                            } else {
+                              delete next[column.key];
+                            }
+
+                            return next;
+                          });
+                        }
+                      }}
+                      onBlur={() => {
                         setFormErrors((prev) => {
                           const next = { ...prev };
-                          const fieldError = validateField(column, value);
+                          const fieldError = validateField(column, form[column.key]);
 
                           if (fieldError) {
                             next[column.key] = fieldError;
@@ -245,25 +345,63 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
 
                           return next;
                         });
-                      }
-                    }}
-                    onBlur={() => {
-                      setFormErrors((prev) => {
-                        const next = { ...prev };
-                        const fieldError = validateField(column, form[column.key]);
+                      }}
+                      aria-invalid={Boolean(formErrors[column.key])}
+                      aria-describedby={formErrors[column.key] ? `${column.key}-error` : undefined}
+                    >
+                      <option value="" className="bg-slate-900 text-slate-100">Select {column.label}</option>
+                      {(column.options || []).map((option) => {
+                        const optionValue = typeof option === 'string' ? option : option.value;
+                        const optionLabel = typeof option === 'string' ? option : option.label;
 
-                        if (fieldError) {
-                          next[column.key] = fieldError;
-                        } else {
-                          delete next[column.key];
+                        return (
+                          <option key={`${column.key}-${optionValue}`} value={optionValue} className="bg-slate-900 text-slate-100">
+                            {optionLabel}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  ) : (
+                    <input
+                      className={`input-glow mt-1 w-full rounded-lg border bg-slate-900/35 px-3 py-2 text-sm text-white outline-none ${formErrors[column.key] ? 'border-rose-300/60' : 'border-cyan-200/25'}`}
+                      value={form[column.key] ?? ''}
+                      onChange={(event) => {
+                        const { value } = event.target;
+                        setForm((prev) => ({ ...prev, [column.key]: value }));
+
+                        if (hasTriedSubmit) {
+                          setFormErrors((prev) => {
+                            const next = { ...prev };
+                            const fieldError = validateField(column, value);
+
+                            if (fieldError) {
+                              next[column.key] = fieldError;
+                            } else {
+                              delete next[column.key];
+                            }
+
+                            return next;
+                          });
                         }
+                      }}
+                      onBlur={() => {
+                        setFormErrors((prev) => {
+                          const next = { ...prev };
+                          const fieldError = validateField(column, form[column.key]);
 
-                        return next;
-                      });
-                    }}
-                    aria-invalid={Boolean(formErrors[column.key])}
-                    aria-describedby={formErrors[column.key] ? `${column.key}-error` : undefined}
-                  />
+                          if (fieldError) {
+                            next[column.key] = fieldError;
+                          } else {
+                            delete next[column.key];
+                          }
+
+                          return next;
+                        });
+                      }}
+                      aria-invalid={Boolean(formErrors[column.key])}
+                      aria-describedby={formErrors[column.key] ? `${column.key}-error` : undefined}
+                    />
+                  )}
                   {formErrors[column.key] && (
                     <span id={`${column.key}-error`} className="mt-1 block text-[11px] text-rose-200">
                       {formErrors[column.key]}
@@ -292,6 +430,18 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
           </div>
         </div>
       )}
+
+      <DeleteConfirmDashboard
+        open={deleteModal.open}
+        title={`Delete ${entityLabel}?`}
+        message={`Are you sure you want to delete this ${entityLabel.toLowerCase()}?`}
+        entityType={resolvedArchiveType}
+        recordLabel={deleteRecordLabel}
+        onCancel={closeDeleteModal}
+        onConfirm={confirmDelete}
+        confirmText="Yes, Delete"
+        cancelText="Cancel"
+      />
     </section>
   );
 }

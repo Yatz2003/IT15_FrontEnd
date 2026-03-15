@@ -3,14 +3,13 @@ import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
-  { to: '/overview', label: 'Overview' },
-  { to: '/students', label: 'Students' },
-  { to: '/programs', label: 'Programs' },
-  { to: '/subjects', label: 'Subjects' },
-  { to: '/active-programs', label: 'Active Programs' },
-  { to: '/enrollment', label: 'Enrollment' },
-  { to: '/reports', label: 'Reports' },
-  { to: '/settings', label: 'Settings' },
+  { to: '/overview', label: 'Academic Overview' },
+  { to: '/students', label: 'Student Directory' },
+  { to: '/programs', label: 'Academic Programs' },
+  { to: '/subjects', label: 'Course Catalog' },
+  { to: '/calendar', label: 'Calendar' },
+  { to: '/enrollment', label: 'Enrollment Management' },
+  { to: '/archive', label: 'Record Recovery' },
 ];
 
 const BRAND_LOGO_SRC = '/brand/SandayanAcademy.png';
@@ -70,7 +69,7 @@ function Navbar({ isDesktopNavVisible = true, onToggleDesktopNav = () => {} }) {
 
       <button
         type="button"
-        className="fixed left-3 top-3 z-[60] rounded-xl border border-cyan-300/30 bg-slate-900/85 px-3 py-2 text-xs font-semibold tracking-wide text-cyan-100 shadow-[0_0_20px_rgba(12,200,255,0.25)] backdrop-blur-md lg:hidden"
+        className={`fixed left-3 top-3 z-[60] rounded-xl border border-cyan-300/30 bg-slate-900/85 px-3 py-2 text-xs font-semibold tracking-wide text-cyan-100 shadow-[0_0_20px_rgba(12,200,255,0.25)] backdrop-blur-md transition-all duration-300 lg:hidden ${isOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label="Toggle navigation"
         aria-expanded={isOpen}
@@ -107,7 +106,7 @@ function Navbar({ isDesktopNavVisible = true, onToggleDesktopNav = () => {} }) {
               <p className="text-xs text-slate-300">Enrollment System</p>
             </div>
           </Link>
-          <p className="mt-3 truncate text-xs text-slate-300">{user?.name || user?.email || 'Authenticated User'}</p>
+          <p className="mt-3 truncate text-xs text-slate-300">Account Menu</p>
           <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-cyan-200/80">
             Current: {currentNavItem?.label || 'Dashboard'}
           </p>

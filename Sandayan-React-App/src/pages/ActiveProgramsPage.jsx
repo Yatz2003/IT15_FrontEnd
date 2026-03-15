@@ -25,6 +25,7 @@ function ActiveProgramsPage() {
       title="Active Programs"
       description="Monitor currently running academic programs and quickly update operational records."
       entityLabel="Active Program"
+      archiveType="Active Programs"
       columns={columns}
       initialRows={initialRows}
     />

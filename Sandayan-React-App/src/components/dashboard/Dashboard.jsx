@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import EnrollmentChart from './EnrollmentChart';
 import CourseDistributionChart from './CourseDistributionChart';
 import AttendanceChart from './AttendanceChart';
+import SchoolDaysSection from './SchoolDaysSection';
 import LoadingSkeleton from '../common/LoadingSkeleton';
 import { dashboardApi } from '../../services/api';
+import schoolDayApi from '../../services/schoolDayApi';
+import subjectApi from '../../services/subjectApi';
 import WeatherWidget from '../weather/WeatherWidget';
 import weatherApi from '../../services/weatherApi';
 
@@ -40,32 +43,72 @@ const metricCards = [
   { key: 'averageAttendance', title: 'Average Attendance', hint: 'Overall attendance rate' },
 ];
 
-const SAMPLE_ROOM_ASSIGNMENTS = [
-  { code: 'SUB101', subjectName: 'General Mathematics', room: 'Lab 201', schedule: 'MWF 8:00-9:30', capacity: '34/45' },
-  { code: 'SUB102', subjectName: 'Physics 1', room: 'Lab 305', schedule: 'TTH 10:00-11:30', capacity: '30/45' },
-  { code: 'CS103', subjectName: 'Data Structures', room: 'Room 402', schedule: 'MWF 1:00-2:30', capacity: '38/45' },
-  { code: 'CS220', subjectName: 'Algorithms', room: 'Room 404', schedule: 'TTH 1:00-2:30', capacity: '26/40' },
-  { code: 'IT202', subjectName: 'Programming Fundamentals', room: 'Lab 118', schedule: 'MWF 3:00-4:30', capacity: '41/45' },
-  { code: 'IT305', subjectName: 'Database Systems', room: 'Room 209', schedule: 'TTH 3:00-4:30', capacity: '29/40' },
-];
-
-const SUBJECT_NAME_BY_CODE = {
-  SUB101: 'General Mathematics',
-  SUB102: 'Physics 1',
-  SUB201: 'Calculus 1',
-  SUB103: 'Chemistry 1',
-  SUB104: 'Communication Arts',
-  IT101: 'Introduction to Computing',
-  IT202: 'Web Systems',
-  CS103: 'Data Structures',
-  CS220: 'Algorithms',
-  BA115: 'Business Analytics',
-  BA206: 'Financial Management',
-  IT305: 'Database Systems',
-};
-
-const SUBJECT_FALLBACKS = ['Physics 1', 'Calculus 1', 'Programming Fundamentals', 'Database Systems', 'General Mathematics', 'Communication Arts'];
 const BRAND_LOGO_SRC = '/brand/SandayanAcademy.png';
+const SCHOOL_DAYS_FALLBACK = [
+  {
+    id: 'fallback-1',
+    dateISO: '2026-03-10T00:00:00.000Z',
+    dateLabel: 'Mar 10',
+    dayName: 'Monday',
+    eventName: 'Regular Classes',
+    attendanceRate: 92,
+    isHoliday: false,
+  },
+  {
+    id: 'fallback-2',
+    dateISO: '2026-03-11T00:00:00.000Z',
+    dateLabel: 'Mar 11',
+    dayName: 'Tuesday',
+    eventName: 'Midterm Exams',
+    attendanceRate: 88,
+    isHoliday: false,
+  },
+  {
+    id: 'fallback-3',
+    dateISO: '2026-03-12T00:00:00.000Z',
+    dateLabel: 'Mar 12',
+    dayName: 'Wednesday',
+    eventName: 'University Holiday',
+    attendanceRate: null,
+    isHoliday: true,
+  },
+  {
+    id: 'fallback-4',
+    dateISO: '2026-03-13T00:00:00.000Z',
+    dateLabel: 'Mar 13',
+    dayName: 'Thursday',
+    eventName: 'Research Symposium',
+    attendanceRate: 90,
+    isHoliday: false,
+  },
+  {
+    id: 'fallback-5',
+    dateISO: '2026-03-14T00:00:00.000Z',
+    dateLabel: 'Mar 14',
+    dayName: 'Friday',
+    eventName: 'Sports Festival',
+    attendanceRate: 85,
+    isHoliday: false,
+  },
+  {
+    id: 'fallback-6',
+    dateISO: '2026-03-15T00:00:00.000Z',
+    dateLabel: 'Mar 15',
+    dayName: 'Saturday',
+    eventName: 'Final Exams',
+    attendanceRate: 87,
+    isHoliday: false,
+  },
+  {
+    id: 'fallback-7',
+    dateISO: '2026-03-16T00:00:00.000Z',
+    dateLabel: 'Mar 16',
+    dayName: 'Sunday',
+    eventName: 'Graduation Day',
+    attendanceRate: 93,
+    isHoliday: false,
+  },
+];
 
 const parseCapacity = (entry = {}) => {
   const present = Number(entry.students_present ?? entry.present ?? entry.current_students ?? entry.enrolled ?? NaN);
@@ -91,17 +134,27 @@ const parseCapacity = (entry = {}) => {
   return '30/45';
 };
 
-const buildRoomAssignments = (distribution = []) => {
+const isGenericSubjectLabel = (value = '') => /^subject\s*\d*$/i.test(String(value).trim());
+
+const buildRoomAssignments = (distribution = [], subjects = []) => {
+  const subjectByCode = new Map(
+    subjects
+      .map((subject) => [String(subject.code || '').trim().toUpperCase(), String(subject.name || '').trim()])
+      .filter(([code, name]) => code && name)
+  );
+  const backendSubjectNames = subjects.map((subject) => String(subject.name || '').trim()).filter(Boolean);
+
   const rows = distribution.slice(0, 8).map((entry, index) => {
-    const code = String(entry.code || entry.course_code || entry.subject_code || `SUB${index + 101}`);
+    const code = String(entry.code || entry.course_code || entry.subject_code || '').trim();
     const normalizedCode = code.toUpperCase();
-    const subjectName = String(
-      entry.subject_name
-      || entry.subject
-      || entry.title
-      || SUBJECT_NAME_BY_CODE[normalizedCode]
-      || SUBJECT_FALLBACKS[index % SUBJECT_FALLBACKS.length]
-    );
+
+    const rawName = String(entry.subject_name || entry.subject || entry.title || '').trim();
+    const mappedByCode = subjectByCode.get(normalizedCode) || '';
+    const mappedByIndex = backendSubjectNames[index] || '';
+    const subjectName = (!rawName || isGenericSubjectLabel(rawName))
+      ? (mappedByCode || mappedByIndex || 'Unassigned Subject')
+      : rawName;
+
     const room = String(entry.room || entry.room_name || `Room ${210 + index}`);
     const schedule = String(entry.schedule || entry.time_slot || entry.class_time || ['MWF 9:00-10:30', 'TTH 10:00-11:30', 'MWF 1:00-2:30'][index % 3]);
     const capacity = parseCapacity(entry);
@@ -115,37 +168,45 @@ const buildRoomAssignments = (distribution = []) => {
     };
   });
 
-  return rows.length ? rows : SAMPLE_ROOM_ASSIGNMENTS;
+  return rows.filter((entry) => entry.subjectName && entry.subjectName !== 'Unassigned Subject');
 };
 
 function Dashboard() {
   const [enrollment, setEnrollment] = useState([]);
   const [distribution, setDistribution] = useState([]);
   const [attendance, setAttendance] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [schoolDays, setSchoolDays] = useState(SCHOOL_DAYS_FALLBACK);
   const [miniWeather, setMiniWeather] = useState(null);
   const [miniWeatherLoading, setMiniWeatherLoading] = useState(true);
   const [loadingByWidget, setLoadingByWidget] = useState({
     enrollment: true,
     distribution: true,
     attendance: true,
+    subjects: true,
+    schoolDays: true,
   });
   const [errorsByWidget, setErrorsByWidget] = useState({
     enrollment: '',
     distribution: '',
     attendance: '',
+    subjects: '',
+    schoolDays: '',
   });
 
   useEffect(() => {
     let isMounted = true;
 
     const loadDashboardData = async () => {
-      setLoadingByWidget({ enrollment: true, distribution: true, attendance: true });
-      setErrorsByWidget({ enrollment: '', distribution: '', attendance: '' });
+      setLoadingByWidget({ enrollment: true, distribution: true, attendance: true, subjects: true, schoolDays: true });
+      setErrorsByWidget({ enrollment: '', distribution: '', attendance: '', subjects: '', schoolDays: '' });
 
-      const [enrollmentResult, distributionResult, attendanceResult] = await Promise.allSettled([
+      const [enrollmentResult, distributionResult, attendanceResult, subjectsResult, schoolDaysResult] = await Promise.allSettled([
         dashboardApi.getEnrollmentAnalytics(),
         dashboardApi.getProgramDistribution(),
         dashboardApi.getAttendancePatterns(),
+        subjectApi.getSubjects(),
+        schoolDayApi.getSchoolDays(),
       ]);
 
       if (!isMounted) {
@@ -179,7 +240,28 @@ function Dashboard() {
         }));
       }
 
-      setLoadingByWidget({ enrollment: false, distribution: false, attendance: false });
+      if (subjectsResult.status === 'fulfilled') {
+        setSubjects(Array.isArray(subjectsResult.value) ? subjectsResult.value : []);
+      } else {
+        setErrorsByWidget((prev) => ({
+          ...prev,
+          subjects: extractError(subjectsResult.reason, 'Unable to load subjects.'),
+        }));
+        setSubjects([]);
+      }
+
+      if (schoolDaysResult.status === 'fulfilled') {
+        const rows = Array.isArray(schoolDaysResult.value) ? schoolDaysResult.value : [];
+        setSchoolDays(rows.length ? rows : SCHOOL_DAYS_FALLBACK);
+      } else {
+        setErrorsByWidget((prev) => ({
+          ...prev,
+          schoolDays: extractError(schoolDaysResult.reason, 'Unable to load school days calendar.'),
+        }));
+        setSchoolDays(SCHOOL_DAYS_FALLBACK);
+      }
+
+      setLoadingByWidget({ enrollment: false, distribution: false, attendance: false, subjects: false, schoolDays: false });
     };
 
     loadDashboardData();
@@ -252,10 +334,7 @@ function Dashboard() {
 
   const summary = useMemo(() => {
     const totalPrograms = distribution.length;
-    const totalSubjects = distribution.reduce((acc, entry) => {
-      const subjectCount = Number(entry.subjects ?? entry.subject_count ?? 0);
-      return acc + (Number.isFinite(subjectCount) ? subjectCount : 0);
-    }, 0);
+    const totalSubjects = subjects.length;
     const activePrograms = distribution.filter((entry) => {
       const status = String(entry.status || '').toLowerCase();
       return status ? status === 'active' : true;
@@ -275,17 +354,17 @@ function Dashboard() {
       studentsCount,
       averageAttendance,
     };
-  }, [distribution, attendance]);
+  }, [distribution, attendance, subjects]);
 
-  const isSummaryLoading = loadingByWidget.distribution || loadingByWidget.attendance;
+  const isSummaryLoading = loadingByWidget.distribution || loadingByWidget.attendance || loadingByWidget.subjects;
 
   const hasGlobalError = Object.values(errorsByWidget).some(Boolean);
-  const roomAssignments = useMemo(() => buildRoomAssignments(distribution), [distribution]);
+  const roomAssignments = useMemo(() => buildRoomAssignments(distribution, subjects), [distribution, subjects]);
 
   return (
     <section className="mx-auto max-w-[1400px] space-y-4">
       <div className="glass-panel relative p-5 sm:p-6">
-        <div className="pr-[145px] sm:pr-[160px]">
+        <div className="sm:pr-[160px]">
           <div>
             <div className="mb-2 flex items-center gap-2.5">
               <img
@@ -299,13 +378,13 @@ function Dashboard() {
               />
               <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-100/85">Sandayan Academy</p>
             </div>
-            <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">Overview</p>
+            <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">Academic Overview</p>
             <h1 className="mt-2 text-3xl font-bold text-cyan-50">Academic Command Center</h1>
             <p className="mt-2 text-sm text-slate-300">Enrollment monitoring and academic performance overview for Sandayan Academy.</p>
           </div>
         </div>
 
-        <div className="glass-panel-soft absolute right-3 top-3 w-[132px] px-2 py-1.5 sm:right-4 sm:top-4 sm:w-[142px]">
+        <div className="glass-panel-soft mt-3 w-full max-w-[220px] px-2 py-1.5 sm:absolute sm:right-4 sm:top-4 sm:mt-0 sm:w-[142px]">
           <p className="text-[10px] uppercase tracking-[0.2em] text-slate-300">Weather</p>
           {miniWeatherLoading ? (
             <p className="mt-1 text-[11px] text-cyan-100">Loading...</p>
@@ -328,6 +407,7 @@ function Dashboard() {
             {errorsByWidget.enrollment && <li>{errorsByWidget.enrollment}</li>}
             {errorsByWidget.distribution && <li>{errorsByWidget.distribution}</li>}
             {errorsByWidget.attendance && <li>{errorsByWidget.attendance}</li>}
+            {errorsByWidget.subjects && <li>{errorsByWidget.subjects}</li>}
           </ul>
         </div>
       )}
@@ -396,21 +476,35 @@ function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              {roomAssignments.map((row) => (
-                <tr key={`${row.code}-${row.subjectName}`} className="border-b border-cyan-100/10">
-                  <td className="py-2 pr-3 font-semibold text-cyan-100">{row.subjectName}</td>
-                  <td className="py-2 pr-3">{row.room}</td>
-                  <td className="py-2 pr-3">{row.schedule}</td>
-                  <td className="py-2">
-                    <span className="inline-flex rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-semibold text-cyan-100">
-                      {row.capacity}
-                    </span>
-                  </td>
+              {roomAssignments.length ? (
+                roomAssignments.map((row) => (
+                  <tr key={`${row.code}-${row.subjectName}`} className="border-b border-cyan-100/10">
+                    <td className="py-2 pr-3 font-semibold text-cyan-100">{row.subjectName}</td>
+                    <td className="py-2 pr-3">{row.room}</td>
+                    <td className="py-2 pr-3">{row.schedule}</td>
+                    <td className="py-2">
+                      <span className="inline-flex rounded-full bg-cyan-400/15 px-2.5 py-1 text-xs font-semibold text-cyan-100">
+                        {row.capacity}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="py-4 text-center text-slate-300">No room assignments available.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div id="academic-calendar">
+        <SchoolDaysSection
+          rows={schoolDays}
+          isLoading={loadingByWidget.schoolDays}
+          error={errorsByWidget.schoolDays}
+        />
       </div>
 
       <div>

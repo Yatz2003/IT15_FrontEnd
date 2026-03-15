@@ -22,9 +22,10 @@ const initialRows = [
 function ProgramsPage() {
   return (
     <CrudTablePage
-      title="Programs"
-      description="Manage program offerings and operational status with quick search and modal-based editing."
+      title="Academic Programs"
+      description="Manage program offerings, colleges, duration, and current program status."
       entityLabel="Program"
+      archiveType="Programs"
       columns={columns}
       initialRows={initialRows}
     />

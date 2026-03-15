@@ -1,11 +1,28 @@
+import { useEffect, useMemo, useState } from 'react';
 import CrudTablePage from '../components/common/CrudTablePage';
+import { dashboardApi } from '../services/api';
 
-const columns = [
+const baseColumns = [
   { key: 'studentNo', label: 'Student No.' },
   { key: 'name', label: 'Full Name' },
-  { key: 'program', label: 'Program' },
-  { key: 'yearLevel', label: 'Year Level' },
-  { key: 'status', label: 'Status' },
+  {
+    key: 'program',
+    label: 'Program',
+    inputType: 'select',
+    options: [],
+  },
+  {
+    key: 'yearLevel',
+    label: 'Year Level',
+    inputType: 'select',
+    options: ['1', '2', '3', '4'],
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    inputType: 'select',
+    options: ['Enrolled', 'Irregular', 'Probationary', 'Graduating', 'Dropped'],
+  },
 ];
 
 const initialRows = [
@@ -20,11 +37,51 @@ const initialRows = [
 ];
 
 function StudentsPage() {
+  const [programOptions, setProgramOptions] = useState(['BSIT', 'BSCS', 'BSBA', 'BSED', 'BSHM']);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProgramOptions = async () => {
+      try {
+        const programs = await dashboardApi.getProgramDistribution();
+
+        if (!mounted || !Array.isArray(programs)) {
+          return;
+        }
+
+        const normalizedPrograms = programs
+          .map((entry) => String(entry.program || '').trim())
+          .filter(Boolean);
+
+        if (!normalizedPrograms.length) {
+          return;
+        }
+
+        setProgramOptions((prev) => Array.from(new Set([...prev, ...normalizedPrograms])).sort());
+      } catch {
+        // Keep existing options when the program source is unavailable.
+      }
+    };
+
+    loadProgramOptions();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const columns = useMemo(
+    () => baseColumns.map((column) => (column.key === 'program' ? { ...column, options: programOptions } : column)),
+    [programOptions]
+  );
+
   return (
     <CrudTablePage
-      title="Students"
-      description="Track student records, profile details, and academic status through a streamlined CRUD interface."
+      title="Student Directory"
+      description="View and update student records, program assignment, year level, and enrollment status."
       entityLabel="Student"
+      archiveType="Students"
       columns={columns}
       initialRows={initialRows}
     />
