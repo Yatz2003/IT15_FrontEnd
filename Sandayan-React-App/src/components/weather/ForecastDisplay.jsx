@@ -1,4 +1,4 @@
-function ForecastDisplay({ items, selectedIndex = 0, onSelectDay }) {
+function ForecastDisplay({ items, selectedIndex = 0, onSelectDay, className = '' }) {
   if (!items.length) {
     return <p className="mt-2 text-xs text-slate-400">No forecast data yet.</p>;
   }
@@ -19,7 +19,7 @@ function ForecastDisplay({ items, selectedIndex = 0, onSelectDay }) {
   };
 
   return (
-    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+    <div className={`mt-2.5 grid h-full auto-rows-fr grid-cols-1 items-stretch gap-1.5 sm:grid-cols-2 lg:grid-cols-5 ${className}`.trim()}>
       {items.map((item, index) => {
         const dayName = buildDayName(item, index);
         const label = index === 0 ? `Today (${dayName})` : dayName;
@@ -28,7 +28,7 @@ function ForecastDisplay({ items, selectedIndex = 0, onSelectDay }) {
         return (
           <button
             type="button"
-            className={`glass-panel-soft rounded-lg p-2.5 text-left transition ${isSelected ? 'border border-cyan-200/50 bg-cyan-400/10' : ''}`}
+            className={`weather-day-card glass-panel-soft h-full rounded-lg p-2 text-left transition ${isSelected ? 'weather-day-card-active border border-cyan-200/60 bg-cyan-400/12' : ''}`}
             key={`${item.dt}-${index}`}
             onClick={() => onSelectDay?.(index)}
           >
@@ -37,8 +37,9 @@ function ForecastDisplay({ items, selectedIndex = 0, onSelectDay }) {
                 <img
                   src={`https://openweathermap.org/img/wn/${item.icon || '01d'}@2x.png`}
                   alt={item.description || 'Weather icon'}
-                  width="34"
-                  height="34"
+                  width="46"
+                  height="46"
+                  className="weather-day-icon"
                 />
               <span className="text-sm font-semibold text-cyan-100">{Math.round(item.temp || 0)}°</span>
             </div>

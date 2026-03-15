@@ -7,7 +7,7 @@ function ProtectedRoute() {
   const location = useLocation();
 
   if (isLoading) {
-    return <LoadingSpinner fullScreen message="Checking session..." />;
+    return <LoadingSpinner fullScreen showBrand message="Checking session..." />;
   }
 
   if (!isAuthenticated) {

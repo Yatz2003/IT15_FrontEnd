@@ -32,14 +32,6 @@ const normalizeAttendanceValue = (entry = {}) => {
   return raw;
 };
 
-const SAMPLE_METRICS = {
-  totalPrograms: 12,
-  totalSubjects: 96,
-  activePrograms: 10,
-  studentsCount: 1240,
-  averageAttendance: 87,
-};
-
 const metricCards = [
   { key: 'studentsCount', title: 'Total Students', hint: 'Total enrolled learners' },
   { key: 'totalPrograms', title: 'Total Programs', hint: 'Registered curriculum tracks' },
@@ -73,6 +65,7 @@ const SUBJECT_NAME_BY_CODE = {
 };
 
 const SUBJECT_FALLBACKS = ['Physics 1', 'Calculus 1', 'Programming Fundamentals', 'Database Systems', 'General Mathematics', 'Communication Arts'];
+const BRAND_LOGO_SRC = '/brand/SandayanAcademy.png';
 
 const parseCapacity = (entry = {}) => {
   const present = Number(entry.students_present ?? entry.present ?? entry.current_students ?? entry.enrolled ?? NaN);
@@ -273,16 +266,18 @@ function Dashboard() {
       .filter((value) => Number.isFinite(value) && value > 0);
     const averageAttendance = attendanceValues.length
       ? Math.round(attendanceValues.reduce((sum, value) => sum + value, 0) / attendanceValues.length)
-      : SAMPLE_METRICS.averageAttendance;
+      : 0;
 
     return {
-      totalPrograms: totalPrograms || SAMPLE_METRICS.totalPrograms,
-      totalSubjects: totalSubjects || SAMPLE_METRICS.totalSubjects,
-      activePrograms: activePrograms || SAMPLE_METRICS.activePrograms,
-      studentsCount: studentsCount || SAMPLE_METRICS.studentsCount,
+      totalPrograms,
+      totalSubjects,
+      activePrograms,
+      studentsCount,
       averageAttendance,
     };
   }, [distribution, attendance]);
+
+  const isSummaryLoading = loadingByWidget.distribution || loadingByWidget.attendance;
 
   const hasGlobalError = Object.values(errorsByWidget).some(Boolean);
   const roomAssignments = useMemo(() => buildRoomAssignments(distribution), [distribution]);
@@ -292,6 +287,18 @@ function Dashboard() {
       <div className="glass-panel relative p-5 sm:p-6">
         <div className="pr-[145px] sm:pr-[160px]">
           <div>
+            <div className="mb-2 flex items-center gap-2.5">
+              <img
+                src={BRAND_LOGO_SRC}
+                alt="Sandayan Academy logo"
+                className="h-10 w-10 rounded-xl object-cover shadow-[0_0_22px_rgba(32,201,255,0.3)]"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = '/vite.svg';
+                }}
+              />
+              <p className="text-[11px] uppercase tracking-[0.24em] text-cyan-100/85">Sandayan Academy</p>
+            </div>
             <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">Overview</p>
             <h1 className="mt-2 text-3xl font-bold text-cyan-50">Academic Command Center</h1>
             <p className="mt-2 text-sm text-slate-300">Enrollment monitoring and academic performance overview for Sandayan Academy.</p>
@@ -330,7 +337,11 @@ function Dashboard() {
           <article key={card.key} className="glass-panel-soft chart-rise p-4 transition hover:-translate-y-1 hover:border-cyan-200/40">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-300">{card.title}</p>
             <h2 className="mt-3 text-3xl font-bold text-neon">
-              {card.key === 'averageAttendance' ? `${summary[card.key] ?? 0}%` : (summary[card.key] ?? 0)}
+              {isSummaryLoading
+                ? '...'
+                : card.key === 'averageAttendance'
+                  ? `${summary[card.key] ?? 0}%`
+                  : (summary[card.key] ?? 0)}
             </h2>
             <p className="mt-2 text-xs text-slate-400">{card.hint}</p>
           </article>
@@ -411,23 +422,23 @@ function Dashboard() {
         <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-lg bg-slate-900/25 px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.12em] text-slate-300">Total Students</p>
-            <p className="mt-1 text-lg font-semibold text-cyan-100">{summary.studentsCount}</p>
+            <p className="mt-1 text-lg font-semibold text-cyan-100">{isSummaryLoading ? '...' : summary.studentsCount}</p>
           </div>
           <div className="rounded-lg bg-slate-900/25 px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.12em] text-slate-300">Total Programs</p>
-            <p className="mt-1 text-lg font-semibold text-cyan-100">{summary.totalPrograms}</p>
+            <p className="mt-1 text-lg font-semibold text-cyan-100">{isSummaryLoading ? '...' : summary.totalPrograms}</p>
           </div>
           <div className="rounded-lg bg-slate-900/25 px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.12em] text-slate-300">Total Subjects</p>
-            <p className="mt-1 text-lg font-semibold text-cyan-100">{summary.totalSubjects}</p>
+            <p className="mt-1 text-lg font-semibold text-cyan-100">{isSummaryLoading ? '...' : summary.totalSubjects}</p>
           </div>
           <div className="rounded-lg bg-slate-900/25 px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.12em] text-slate-300">Active Programs</p>
-            <p className="mt-1 text-lg font-semibold text-cyan-100">{summary.activePrograms}</p>
+            <p className="mt-1 text-lg font-semibold text-cyan-100">{isSummaryLoading ? '...' : summary.activePrograms}</p>
           </div>
           <div className="rounded-lg bg-slate-900/25 px-3 py-2">
             <p className="text-[11px] uppercase tracking-[0.12em] text-slate-300">Average Attendance</p>
-            <p className="mt-1 text-lg font-semibold text-cyan-100">{summary.averageAttendance}%</p>
+            <p className="mt-1 text-lg font-semibold text-cyan-100">{isSummaryLoading ? '...' : `${summary.averageAttendance}%`}</p>
           </div>
         </div>
       </div>

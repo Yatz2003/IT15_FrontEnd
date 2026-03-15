@@ -20,6 +20,37 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
   const [isLoading, setIsLoading] = useState(true);
   const [modalState, setModalState] = useState({ open: false, mode: 'create', rowId: null });
   const [form, setForm] = useState(() => toInitialForm(columns));
+  const [formErrors, setFormErrors] = useState({});
+  const [hasTriedSubmit, setHasTriedSubmit] = useState(false);
+
+  const validateField = (column, value) => {
+    const rawValue = String(value ?? '').trim();
+
+    if (!rawValue) {
+      return `${column.label} is required.`;
+    }
+
+    if (/^(yearLevel|units|enrolled)$/i.test(column.key) && !/^\d+$/.test(rawValue)) {
+      return `${column.label} must be a valid number.`;
+    }
+
+    return '';
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+
+    columns.forEach((column) => {
+      const fieldError = validateField(column, form[column.key]);
+
+      if (fieldError) {
+        nextErrors[column.key] = fieldError;
+      }
+    });
+
+    setFormErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -40,31 +71,40 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
   }, [columns, rows, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
+    const start = (safeCurrentPage - 1) * PAGE_SIZE;
     return filteredRows.slice(start, start + PAGE_SIZE);
-  }, [currentPage, filteredRows]);
-
-  useEffect(() => {
-    setCurrentPage((page) => Math.min(page, totalPages));
-  }, [totalPages]);
+  }, [filteredRows, safeCurrentPage]);
 
   const openCreateModal = () => {
     setForm(toInitialForm(columns));
+    setFormErrors({});
+    setHasTriedSubmit(false);
     setModalState({ open: true, mode: 'create', rowId: null });
   };
 
   const openEditModal = (row) => {
     setForm(toInitialForm(columns, row));
+    setFormErrors({});
+    setHasTriedSubmit(false);
     setModalState({ open: true, mode: 'edit', rowId: row.id });
   };
 
   const closeModal = () => {
+    setFormErrors({});
+    setHasTriedSubmit(false);
     setModalState({ open: false, mode: 'create', rowId: null });
   };
 
   const saveRecord = () => {
+    setHasTriedSubmit(true);
+
+    if (!validateForm()) {
+      return;
+    }
+
     if (modalState.mode === 'create') {
       const nextId = rows.length ? Math.max(...rows.map((row) => Number(row.id) || 0)) + 1 : 1;
       setRows((prev) => [...prev, { id: nextId, ...form }]);
@@ -78,8 +118,7 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
   return (
     <section className="mx-auto max-w-[1400px] space-y-4">
       <div className="glass-panel p-5 sm:p-6">
-        <p className="text-xs uppercase tracking-[0.35em] text-cyan-200/80">Data Module</p>
-        <h1 className="mt-2 text-3xl font-bold text-cyan-50">{title}</h1>
+        <h1 className="text-3xl font-bold text-cyan-50">{title}</h1>
         <p className="mt-2 text-sm text-slate-300">{description}</p>
       </div>
 
@@ -148,24 +187,24 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
 
             <div className="mt-4 flex items-center justify-between text-xs text-slate-300">
               <p>
-                Showing {(currentPage - 1) * PAGE_SIZE + (paginatedRows.length ? 1 : 0)}-
-                {(currentPage - 1) * PAGE_SIZE + paginatedRows.length} of {filteredRows.length}
+                Showing {(safeCurrentPage - 1) * PAGE_SIZE + (paginatedRows.length ? 1 : 0)}-
+                {(safeCurrentPage - 1) * PAGE_SIZE + paginatedRows.length} of {filteredRows.length}
               </p>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   className="rounded-md border border-cyan-200/30 px-2.5 py-1 transition hover:bg-cyan-400/10 disabled:opacity-50"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={safeCurrentPage === 1}
+                  onClick={() => setCurrentPage((page) => Math.max(1, Math.min(totalPages, page - 1)))}
                 >
                   Prev
                 </button>
-                <span>Page {currentPage} / {totalPages}</span>
+                <span>Page {safeCurrentPage} / {totalPages}</span>
                 <button
                   type="button"
                   className="rounded-md border border-cyan-200/30 px-2.5 py-1 transition hover:bg-cyan-400/10 disabled:opacity-50"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={safeCurrentPage === totalPages}
+                  onClick={() => setCurrentPage((page) => Math.max(1, Math.min(totalPages, page + 1)))}
                 >
                   Next
                 </button>
@@ -187,10 +226,49 @@ function CrudTablePage({ title, description, entityLabel, columns, initialRows }
                 <label key={column.key} className="text-xs text-slate-300">
                   {column.label}
                   <input
-                    className="input-glow mt-1 w-full rounded-lg border border-cyan-200/25 bg-slate-900/35 px-3 py-2 text-sm text-white outline-none"
+                    className={`input-glow mt-1 w-full rounded-lg border bg-slate-900/35 px-3 py-2 text-sm text-white outline-none ${formErrors[column.key] ? 'border-rose-300/60' : 'border-cyan-200/25'}`}
                     value={form[column.key] ?? ''}
-                    onChange={(event) => setForm((prev) => ({ ...prev, [column.key]: event.target.value }))}
+                    onChange={(event) => {
+                      const { value } = event.target;
+                      setForm((prev) => ({ ...prev, [column.key]: value }));
+
+                      if (hasTriedSubmit) {
+                        setFormErrors((prev) => {
+                          const next = { ...prev };
+                          const fieldError = validateField(column, value);
+
+                          if (fieldError) {
+                            next[column.key] = fieldError;
+                          } else {
+                            delete next[column.key];
+                          }
+
+                          return next;
+                        });
+                      }
+                    }}
+                    onBlur={() => {
+                      setFormErrors((prev) => {
+                        const next = { ...prev };
+                        const fieldError = validateField(column, form[column.key]);
+
+                        if (fieldError) {
+                          next[column.key] = fieldError;
+                        } else {
+                          delete next[column.key];
+                        }
+
+                        return next;
+                      });
+                    }}
+                    aria-invalid={Boolean(formErrors[column.key])}
+                    aria-describedby={formErrors[column.key] ? `${column.key}-error` : undefined}
                   />
+                  {formErrors[column.key] && (
+                    <span id={`${column.key}-error`} className="mt-1 block text-[11px] text-rose-200">
+                      {formErrors[column.key]}
+                    </span>
+                  )}
                 </label>
               ))}
             </div>

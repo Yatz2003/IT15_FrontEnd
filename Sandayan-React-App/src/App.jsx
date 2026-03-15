@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import Login from './components/auth/Login';
 import Dashboard from './components/dashboard/Dashboard';
@@ -14,12 +15,13 @@ import ActiveProgramsPage from './pages/ActiveProgramsPage';
 
 function AppShell() {
   const location = useLocation();
+  const [isDesktopNavVisible, setIsDesktopNavVisible] = useState(true);
 
   return (
     <div className="relative min-h-screen">
       <div className="grid-atmosphere" aria-hidden="true" />
-      <Navbar />
-      <main className="min-h-screen px-3 pb-5 pt-16 lg:pl-[19rem] lg:pr-8 lg:pt-6">
+      <Navbar isDesktopNavVisible={isDesktopNavVisible} onToggleDesktopNav={() => setIsDesktopNavVisible((prev) => !prev)} />
+      <main className={`min-h-screen px-3 pb-5 pt-16 transition-all duration-500 ease-in-out lg:pr-8 lg:pt-6 ${isDesktopNavVisible ? 'lg:pl-[19rem]' : 'lg:pl-8'}`}>
         <div key={location.pathname} className="page-stage">
           <Outlet />
         </div>

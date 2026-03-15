@@ -14,7 +14,7 @@ import ForecastDisplay from './ForecastDisplay';
 const KNOWN_LOCATIONS = ['Manila', 'Quezon City', 'Cebu City', 'Davao City', 'Baguio'];
 
 function WeatherWidget() {
-  const [query, setQuery] = useState(DEFAULT_LOCATION.city);
+  const [query, setQuery] = useState('');
   const [current, setCurrent] = useState(null);
   const [forecast, setForecast] = useState([]);
   const [selectedDayIndex, setSelectedDayIndex] = useState(0);
@@ -38,7 +38,7 @@ function WeatherWidget() {
 
   const applyWeather = useCallback((payload) => {
     setCurrent(payload.current || null);
-    setForecast(Array.isArray(payload.forecast) ? payload.forecast.slice(0, 7) : []);
+    setForecast(Array.isArray(payload.forecast) ? payload.forecast.slice(0, 5) : []);
     setSelectedDayIndex(0);
   }, []);
 
@@ -91,7 +91,7 @@ function WeatherWidget() {
     loadWeatherByCoords(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon, options);
   }, [loadWeatherByCoords]);
 
-  const loadGeoWeather = () => {
+  const loadGeoWeather = useCallback(() => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported in this browser. Showing Manila weather instead.');
       loadDefaultWeather({ preserveError: true });
@@ -142,11 +142,11 @@ function WeatherWidget() {
         maximumAge: 300000,
       }
     );
-  };
+  }, [loadDefaultWeather, loadWeatherByCoords]);
 
   useEffect(() => {
-    loadDefaultWeather();
-  }, [loadDefaultWeather]);
+    loadGeoWeather();
+  }, [loadGeoWeather]);
 
   const handleSearch = (event) => {
     event.preventDefault();
@@ -176,11 +176,11 @@ function WeatherWidget() {
   const hourlyData = Array.isArray(selectedForecast?.hourly) ? selectedForecast.hourly : [];
 
   return (
-    <section className="glass-panel h-full p-4 sm:p-5">
-      <div className="mb-3 flex items-start justify-between gap-3">
+    <section className="glass-panel h-full p-3.5 sm:p-4">
+      <div className="mb-2.5 flex items-start justify-between gap-2.5">
         <div>
           <h2 className="text-sm font-semibold text-cyan-100">Weather Nexus</h2>
-          <p className="mt-1 text-xs text-slate-400">7-day local weather outlook</p>
+          <p className="mt-1 text-xs text-slate-400">5-day local weather outlook</p>
         </div>
           <button
             type="button"
@@ -192,13 +192,13 @@ function WeatherWidget() {
           </button>
       </div>
 
-      <form className="mb-3 flex gap-2" onSubmit={handleSearch}>
+      <form className="mb-2.5 flex gap-2" onSubmit={handleSearch}>
         <div className="relative w-full">
           <input
             className="input-glow w-full rounded-lg border border-cyan-200/25 bg-slate-900/35 px-3 py-2 pr-20 text-sm text-white outline-none"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search city"
+            placeholder="Search location"
             disabled={isLoading}
           />
           <select
@@ -231,48 +231,56 @@ function WeatherWidget() {
       ) : (
         <>
           {current && (
-            <div className="glass-panel-soft mt-3 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs text-slate-300">{current.name}</p>
-                  <p className="mt-1 text-4xl font-bold text-neon">{Math.round(current.main?.temp || 0)} °C</p>
-                  <p className="text-xs capitalize text-slate-300">{current.weather?.[0]?.description || 'Clear sky'}</p>
+            <div className="glass-panel-soft weather-overview-grid mt-2.5 p-3">
+              <div className="weather-location-card rounded-lg border border-cyan-200/15 bg-slate-900/20 p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs text-slate-300">{current.name}</p>
+                    <p className="mt-1 text-[2.15rem] font-bold leading-none text-neon">{Math.round(current.main?.temp || 0)} °C</p>
+                    <p className="text-xs capitalize text-slate-300">{current.weather?.[0]?.description || 'Clear sky'}</p>
+                  </div>
+                  <img
+                    src={`https://openweathermap.org/img/wn/${current.weather?.[0]?.icon || '01d'}@2x.png`}
+                    alt={current.weather?.[0]?.description || 'Weather icon'}
+                    width="96"
+                    height="96"
+                    className="weather-main-icon"
+                  />
                 </div>
-                <img
-                  src={`https://openweathermap.org/img/wn/${current.weather?.[0]?.icon || '01d'}@2x.png`}
-                  alt={current.weather?.[0]?.description || 'Weather icon'}
-                  width="72"
-                  height="72"
-                />
+                <div className="mt-2.5 grid grid-cols-2 gap-1.5 text-xs text-slate-300">
+                  <p>Humidity: {current.main?.humidity || '--'}%</p>
+                  <p>Wind: {Math.round(current.wind?.speed || 0)} m/s</p>
+                </div>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-300">
-                <p>Humidity: {current.main?.humidity || '--'}%</p>
-                <p>Wind: {Math.round(current.wind?.speed || 0)} m/s</p>
+
+              <div className="weather-days-wrap rounded-lg border border-cyan-200/15 bg-slate-900/20 p-2.5">
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-cyan-100">5-Day Forecast</h3>
+                  <p className="text-[11px] text-slate-400">Select a day</p>
+                </div>
+                <ForecastDisplay items={forecast} selectedIndex={selectedDayIndex} onSelectDay={setSelectedDayIndex} className="mt-0 h-full" />
               </div>
             </div>
           )}
 
-          <h3 className="mt-4 text-sm font-semibold text-cyan-100">7-Day Forecast</h3>
-          <ForecastDisplay items={forecast} selectedIndex={selectedDayIndex} onSelectDay={setSelectedDayIndex} />
-
           {selectedForecast && (
-            <div className="glass-panel-soft mt-3 p-3">
+            <div key={selectedForecast.dt || selectedDayIndex} className="glass-panel-soft hourly-panel-enter mt-2.5 p-3">
               <p className="text-xs font-semibold text-cyan-100">
                 {selectedDayIndex === 0 ? 'Today' : (selectedForecast.day || 'Selected Day')} Hourly Weather
               </p>
 
               {hourlyData.length ? (
                 <>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-300 sm:grid-cols-4">
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 text-xs text-slate-300 sm:grid-cols-4">
                     {hourlyData.map((hour) => (
-                      <div key={`${selectedForecast.dt}-${hour.time}`} className="rounded-md bg-slate-900/25 px-2 py-1.5">
+                      <div key={`${selectedForecast.dt}-${hour.time}`} className="hourly-weather-tile rounded-md bg-slate-900/25 px-2 py-1.5">
                         <p>{hour.time}</p>
                         <p className="font-semibold text-cyan-100">{Math.round(hour.temp)}°C</p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-3" style={{ height: 150 }}>
+                  <div className="chart-rise mt-2.5" style={{ height: 145 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={hourlyData} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
                         <XAxis dataKey="time" stroke="rgba(202, 227, 255, 0.85)" tick={{ fontSize: 10 }} />

@@ -134,6 +134,70 @@ a {
   animation: gradientDrift 16s ease infinite;
 }
 
+.weather-main-icon {
+  filter: drop-shadow(0 0 14px rgba(90, 212, 255, 0.34));
+}
+
+.weather-day-icon {
+  filter: drop-shadow(0 0 10px rgba(98, 220, 255, 0.3));
+}
+
+.weather-day-card {
+  transform: translateY(0) scale(1);
+  transition: transform 180ms ease, box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease;
+}
+
+.weather-day-card:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: rgba(162, 235, 255, 0.45);
+  box-shadow: 0 8px 22px rgba(3, 12, 33, 0.45);
+}
+
+.weather-day-card-active {
+  animation: weatherSelectPop 260ms ease;
+  box-shadow: 0 0 0 1px rgba(131, 241, 255, 0.36), 0 10px 24px rgba(5, 20, 45, 0.44);
+}
+
+.hourly-panel-enter {
+  animation: weatherPanelIn 280ms ease;
+}
+
+.hourly-weather-tile {
+  transition: transform 160ms ease, background-color 160ms ease;
+}
+
+.hourly-weather-tile:hover {
+  transform: translateY(-2px);
+  background: rgba(29, 78, 216, 0.22);
+}
+
+.weather-overview-grid {
+  display: grid;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.weather-days-wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+@media (min-width: 1024px) {
+  .weather-overview-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr);
+    align-items: stretch;
+  }
+
+  .weather-location-card {
+    height: 100%;
+  }
+
+  .weather-days-wrap {
+    height: 100%;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 9px;
   height: 9px;
@@ -185,5 +249,28 @@ a {
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
+  }
+}
+
+@keyframes weatherSelectPop {
+  0% {
+    transform: scale(0.97);
+  }
+  70% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes weatherPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
