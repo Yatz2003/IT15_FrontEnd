@@ -11,6 +11,7 @@ function Login() {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -105,15 +106,39 @@ function Login() {
 
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-100" htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              className={`input-glow w-full rounded-xl border bg-slate-950/35 px-3 py-2.5 text-sm text-white outline-none transition ${errors.password ? 'border-rose-300/60' : 'border-cyan-200/30'}`}
-              placeholder="Enter your password"
-              value={form.password}
-              onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-              disabled={isSubmitting}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                className={`input-glow w-full rounded-xl border bg-slate-950/35 px-3 py-2.5 pr-10 text-sm text-white outline-none transition ${errors.password ? 'border-rose-300/60' : 'border-cyan-200/30'}`}
+                placeholder="Enter your password"
+                value={form.password}
+                onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                disabled={isSubmitting}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-2 inline-flex items-center justify-center text-slate-200 transition hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={() => setShowPassword((prev) => !prev)}
+                disabled={isSubmitting}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                aria-pressed={showPassword}
+              >
+                {showPassword ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
+                    <path d="M3 3l18 18" />
+                    <path d="M10.58 10.58a2 2 0 102.83 2.83" />
+                    <path d="M9.88 5.09A9.77 9.77 0 0112 4c5 0 9.27 3.11 11 8a11.8 11.8 0 01-4.07 5.26" />
+                    <path d="M6.61 6.61A11.8 11.8 0 001 12c1.73 4.89 6 8 11 8a9.77 9.77 0 003.88-.8" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5" aria-hidden="true">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </button>
+            </div>
             {errors.password && <p className="mt-1 text-xs text-rose-200">{errors.password}</p>}
           </div>
 
